@@ -1,0 +1,109 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+model Product {
+  id        String   @id
+  name      String
+  category  String   @default("")
+  size      String   @default("")
+  color     String   @default("")
+  buy       Int      @default(0)
+  sell      Int      @default(0)
+  stock     Int      @default(0)
+  min       Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Income {
+  id         String   @id
+  date       DateTime
+  productId  String
+  qty        Int
+  buy        Int
+  supplier   String   @default("")
+  note       String   @default("")
+  createdAt  DateTime @default(now())
+}
+
+model Sale {
+  id         String   @id
+  date       DateTime
+  productId  String
+  qty        Int
+  sell       Int
+  payment    String
+  customer   String   @default("")
+  note       String   @default("")
+  createdAt  DateTime @default(now())
+}
+
+model Expense {
+  id         String   @id
+  date       DateTime
+  category   String
+  amount     Int
+  note       String   @default("")
+  createdAt  DateTime @default(now())
+}
+
+model Worker {
+  id        String   @id
+  name      String
+  role      String   @default("")
+  salary    Int
+  payday    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  advances  WorkerAdvance[]
+  payments  SalaryPayment[]
+}
+
+model WorkerAdvance {
+  id        String   @id
+  workerId  String
+  date      DateTime
+  month     String
+  amount    Int
+  note      String   @default("")
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+model SalaryPayment {
+  id        String   @id
+  workerId  String
+  date      DateTime
+  month     String
+  amount    Int
+  type      String   @default("salary")
+  note      String   @default("")
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+model Settings {
+  id          Int @id @default(1)
+  openingCash Int @default(0)
+  updatedAt   DateTime @updatedAt
+}

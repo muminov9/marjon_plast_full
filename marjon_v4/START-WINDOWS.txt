@@ -1,0 +1,10 @@
+1) Node.js 20+ o'rnating (https://nodejs.org).
+2) Shu papkada terminal oching:
+   npm install
+3) .env faylini yarating (nusxa: .env.example) va JWT_SECRET ni uzun random qiymatga almashtiring.
+4) Ixtiyoriy: npm run seed  -> demo ma'lumot va admin/admin123 hisobini yaratadi.
+5) npm start
+6) Brauzerda http://localhost:3000 ni oching.
+
+Ma'lumotlar data.json faylida saqlanadi (backups/ papkasida har kuni avtomatik zaxira).
+Production: NODE_ENV=production qilib ishga tushiring va kuchli JWT_SECRET ishlating.

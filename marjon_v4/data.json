@@ -1,0 +1,116 @@
+{
+  "users": [
+    {
+      "id": "usr_admin",
+      "name": "Administrator",
+      "username": "admin",
+      "passwordHash": "$2b$12$1SwARBrZLu3OxuFO8UbBS.UXyMqN4RsjNLvZa2rapLdWBYYWv//Yy",
+      "role": "ADMIN",
+      "active": true,
+      "createdAt": "2026-09-17T19:52:08.534Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "p1",
+      "name": "Plastik paket",
+      "category": "Paket",
+      "unit": "dona",
+      "buy": 500,
+      "sell": 800,
+      "stock": 1000,
+      "min": 100
+    },
+    {
+      "id": "p2",
+      "name": "Konteyner",
+      "category": "Idish",
+      "unit": "dona",
+      "buy": 3000,
+      "sell": 5000,
+      "stock": 250,
+      "min": 30
+    },
+    {
+      "id": "pro_mu5z8hxg_1atomn",
+      "createdAt": "2026-09-17T20:23:14.116Z",
+      "name": "mandelli",
+      "category": "quloqli",
+      "unit": "dona",
+      "buy": 250000,
+      "sell": 300000,
+      "stock": 119850,
+      "min": 0
+    }
+  ],
+  "customers": [],
+  "suppliers": [],
+  "rawMaterials": [],
+  "productions": [],
+  "sales": [
+    {
+      "id": "sal_mu5z8thv_hfkhoq",
+      "date": "2026-09-18",
+      "productId": "pro_mu5z8hxg_1atomn",
+      "qty": 150,
+      "sell": 300000,
+      "total": 45000000,
+      "payment": "Naqd",
+      "customerId": "",
+      "note": "",
+      "createdAt": "2026-09-17T20:23:29.107Z"
+    }
+  ],
+  "purchases": [],
+  "expenses": [],
+  "workers": [],
+  "payroll": [],
+  "cash": [
+    {
+      "id": "cash_mu5z8thv_lgzj5u",
+      "date": "2026-09-18",
+      "type": "income",
+      "amount": 45000000,
+      "source": "sale",
+      "refId": "sal_mu5z8thv_hfkhoq",
+      "note": ""
+    }
+  ],
+  "settings": {
+    "companyName": "Marjon Plast",
+    "currency": "UZS",
+    "openingCash": 0
+  },
+  "audit": [
+    {
+      "id": "log_mu5z8thy_4l9wxv",
+      "date": "2026-09-17T20:23:29.110Z",
+      "userId": "usr_admin",
+      "userName": "Administrator",
+      "action": "CREATE",
+      "entity": "sale",
+      "entityId": "sal_mu5z8thv_hfkhoq",
+      "details": ""
+    },
+    {
+      "id": "log_mu5z8hxi_otqag7",
+      "date": "2026-09-17T20:23:14.118Z",
+      "userId": "usr_admin",
+      "userName": "Administrator",
+      "action": "CREATE",
+      "entity": "products",
+      "entityId": "pro_mu5z8hxg_1atomn",
+      "details": ""
+    },
+    {
+      "id": "log_mu5y4m3h_wnz7w6",
+      "date": "2026-09-17T19:52:13.277Z",
+      "userId": "usr_admin",
+      "userName": "Administrator",
+      "action": "LOGIN",
+      "entity": "auth",
+      "entityId": "usr_admin",
+      "details": ""
+    }
+  ]
+}
