@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: marjon-plast
+    runtime: node
+    plan: free
+    rootDir: marjon_v4
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
