@@ -3,3 +3,5 @@ node_modules/
 backups/
 corrupt-*.json
 *.log
+.vercel
+.env*
