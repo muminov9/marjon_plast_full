@@ -37,7 +37,7 @@ function normalize(parsed) {
 function loadFile() {
   if (!fs.existsSync(DATA)) {
     const x = initial();
-    fs.writeFileSync(DATA, JSON.stringify(x, null, 2));
+    try { fs.writeFileSync(DATA, JSON.stringify(x, null, 2)); } catch { /* serverless (o'qiladigan) fayl tizimi */ }
     return x;
   }
   try {
