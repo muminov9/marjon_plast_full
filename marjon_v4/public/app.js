@@ -32,6 +32,8 @@ I.ru = {
   Qarzdorlik: "Задолженность",
   "Yetkazib beruvchilar": "Поставщики",
   Sotuv: "Продажа",
+  "Sotuv tarixi": "История продаж",
+  "Bugungi sotuvlar": "Продажи сегодня",
   Kirim: "Поступление",
   Ishchilar: "Работники",
   Oylik: "Зарплата",
@@ -160,6 +162,8 @@ I.en = {
   Qarzdorlik: "Debts",
   "Yetkazib beruvchilar": "Suppliers",
   Sotuv: "Sales",
+  "Sotuv tarixi": "Sales history",
+  "Bugungi sotuvlar": "Today's sales",
   Kirim: "Purchases",
   Ishchilar: "Workers",
   Oylik: "Payroll",
@@ -321,6 +325,7 @@ const sections = [
   ["debts", "💳", "Qarzdorlik"],
   ["suppliers", "🚚", "Yetkazib beruvchilar"],
   ["sales", "🛒", "Sotuv"],
+  ["saleshist", "🗂", "Sotuv tarixi"],
   ["purchases", "📥", "Kirim"],
   ["workers", "👷", "Ishchilar"],
   ["payroll", "💰", "Oylik"],
@@ -517,6 +522,7 @@ function allowed(k) {
         debts: ["ADMIN", "MANAGER", "CASHIER"],
         suppliers: ["ADMIN", "MANAGER"],
         sales: ["ADMIN", "MANAGER", "CASHIER"],
+        saleshist: ["ADMIN", "MANAGER", "CASHIER"],
         purchases: ["ADMIN", "MANAGER"],
         workers: ["ADMIN", "MANAGER"],
         payroll: ["ADMIN", "MANAGER"],
@@ -544,6 +550,7 @@ async function page(k) {
       debts,
       suppliers,
       sales,
+      saleshist,
       purchases,
       workers,
       payroll,
@@ -675,21 +682,64 @@ function simple(titleText, key, fields) {
   )}</div>`;
 }
 function sales() {
-  view.innerHTML = `<div class="toolbar"><h2>${T("Sotuv")}</h2><button class="btn primary" onclick="saleForm()">＋ ${T(
+  const t = localDate(),
+    xs = db.sales.filter((s) => s.date === t),
+    total = xs.reduce((a, s) => a + s.total, 0);
+  view.innerHTML = `<div class="toolbar"><h2>${T("Sotuv")}</h2><div class="actions"><button class="btn" onclick="page('saleshist')">🗂 ${T(
+    "Sotuv tarixi",
+  )}</button><button class="btn primary" onclick="saleForm()">＋ ${T(
     "Sotuv",
-  )}</button></div><div class="panel">${table(
+  )}</button></div></div><div class="grid"><div class="card"><span>${T(
+    "Bugungi sotuvlar",
+  )}</span><strong>${money(total)}</strong></div></div><div class="panel">${table(
+    [T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz"), ""],
+    xs.map((s) => {
+      let p = db.products.find((p) => p.id === s.productId),
+        c = db.customers.find((c) => c.id === s.customerId);
+      return `<tr><td>${esc(p?.name || "-")}</td><td>${fmtN(s.qty)}</td><td>${money(
+        s.total,
+      )}</td><td>${T(s.payment)}</td><td>${esc(
+        c?.name || "-",
+      )}</td><td class="actions"><button class="danger" onclick="del('sales','${
+        s.id
+      }')">🗑</button></td></tr>`;
+    }).join(""),
+  )}</div>`;
+}
+function saleshist() {
+  view.innerHTML = `<div class="toolbar"><h2>${T("Sotuv tarixi")}</h2></div><div class="panel"><div class="two"><div class="field"><label>${T(
+    "Boshlanish",
+  )}</label><input id="hfrom" type="date"></div><div class="field"><label>${T(
+    "Tugash",
+  )}</label><input id="hto" type="date" value="${localDate()}"></div></div><button class="btn primary" onclick="histData()">${T(
+    "Hisobotni ko'rish",
+  )}</button><div id="hist" style="margin-top:18px"></div></div>`;
+  histData();
+}
+function histData() {
+  const from = hfrom.value || "1900-01-01",
+    to = hto.value || "2999-12-31";
+  const xs = db.sales
+    .filter((s) => s.date >= from && s.date <= to)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const total = xs.reduce((a, s) => a + s.total, 0);
+  if (!xs.length)
+    return (hist.innerHTML = `<div class="card"><span>${T(
+      "Jami",
+    )}</span><strong>${money(0)}</strong></div>`);
+  hist.innerHTML = `<div class="grid"><div class="card"><span>${T(
+    "Jami",
+  )}</span><strong>${money(total)}</strong></div></div><div style="margin-top:14px">${table(
     [T("Sana"), T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz")],
-    db.sales
-      .map((s) => {
-        let p = db.products.find((p) => p.id === s.productId),
-          c = db.customers.find((c) => c.id === s.customerId);
-        return `<tr><td>${s.date}</td><td>${esc(p?.name || "-")}</td><td>${fmtN(
-          s.qty,
-        )}</td><td>${money(s.total)}</td><td>${T(s.payment)}</td><td>${esc(
-          c?.name || "-",
-        )}</td></tr>`;
-      })
-      .join(""),
+    xs.map((s) => {
+      let p = db.products.find((p) => p.id === s.productId),
+        c = db.customers.find((c) => c.id === s.customerId);
+      return `<tr><td>${s.date}</td><td>${esc(p?.name || "-")}</td><td>${fmtN(
+        s.qty,
+      )}</td><td>${money(s.total)}</td><td>${T(s.payment)}</td><td>${esc(
+        c?.name || "-",
+      )}</td></tr>`;
+    }).join(""),
   )}</div>`;
 }
 function purchases() {

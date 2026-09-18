@@ -111,6 +111,20 @@ app.post('/api/sales', auth, can('sales'), (req, res) => {
   db.cash.push({ id: id('cash'), date: s.date, type: 'income', amount: payment === 'Qarz' ? 0 : total, source: 'sale', refId: s.id, note });
   save(); log(req.user, 'CREATE', 'sale', s.id); res.json(s);
 });
+app.delete('/api/sales/:id', auth, can('sales'), (req, res) => {
+  const i = db.sales.findIndex(x => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ message: 'Topilmadi' });
+  const [s] = db.sales.splice(i, 1);
+  const p = db.products.find(x => x.id === s.productId);
+  if (p) p.stock = money(p.stock) + money(s.qty);
+  if (s.payment === 'Qarz' && s.customerId) {
+    const c = db.customers.find(x => x.id === s.customerId);
+    if (c) c.debt = Math.max(0, money(c.debt) - money(s.total));
+  }
+  const cashIdx = db.cash.findIndex(x => x.refId === s.id && x.source === 'sale');
+  if (cashIdx >= 0) db.cash.splice(cashIdx, 1);
+  save(); log(req.user, 'DELETE', 'sale', s.id); res.json({ ok: true });
+});
 app.post('/api/purchases', auth, can('purchases'), (req, res) => {
   const { productId, qty, buy, supplierId = '', date = today(), note = '' } = req.body;
   const p = db.products.find(x => x.id === productId); if (!p) return res.status(400).json({ message: 'Mahsulot topilmadi' });
