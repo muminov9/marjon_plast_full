@@ -129,5 +129,7 @@ export async function initDB() {
   let parsed = null;
   if (remote) parsed = await loadRemote();
   if (!parsed) parsed = loadFile();
-  return normalize(parsed);
+  const n = normalize(parsed);
+  console.log('[marjon] remote=' + remote + ' users=' + n.users.length + ' products=' + n.products.length);
+  return n;
 }
