@@ -5,3 +5,5 @@ corrupt-*.json
 *.log
 .vercel
 .env*
+.agents
+skills-lock.json

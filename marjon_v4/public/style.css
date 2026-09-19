@@ -134,6 +134,34 @@ button:active {
   background: #f2f4f7;
   color: var(--muted);
 }
+.pwd-wrap {
+  position: relative;
+}
+.pwd-wrap input {
+  padding-right: 46px;
+}
+.pwd-eye {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+.pwd-eye:hover {
+  background: #eef2f7;
+  color: var(--text);
+}
+[data-theme="dark"] .pwd-eye:hover {
+  background: #22304a;
+  color: var(--text);
+}
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -313,6 +341,35 @@ button:active {
   gap: 15px;
   margin-bottom: 18px;
   flex-wrap: wrap;
+}
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mt {
+  margin-top: 14px;
+}
+.key-btn {
+  padding: 8px 11px;
+  font-size: 15px;
+}
+.seg {
+  border-radius: 999px;
+}
+.seg.seg-active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+}
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+.duo .panel {
+  margin-top: 0;
 }
 
 /* ---------- Table ---------- */
@@ -680,6 +737,68 @@ tbody tr:last-child td {
   }
 }
 
+/* ---------- Grafik (stats) ---------- */
+.chart {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  height: 260px;
+  padding: 10px 4px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.col {
+  flex: 1 0 42px;
+  min-width: 34px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 6px;
+  height: 100%;
+}
+.bars {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+}
+.bar {
+  width: 16px;
+  border-radius: 6px 6px 3px 3px;
+  min-height: 2px;
+  transition: filter 0.15s ease;
+}
+.bar:hover {
+  filter: brightness(1.15);
+}
+.lbl {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.legend {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+[data-theme="dark"] .chart {
+  border-bottom-color: #22304a;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1100px) {
   .grid {
@@ -691,19 +810,26 @@ tbody tr:last-child td {
     flex-direction: column;
   }
   .side {
-    position: static;
+    position: sticky;
+    top: 0;
     inset: auto;
     width: auto;
-    padding: 14px;
+    padding: 10px 14px;
+    z-index: 30;
   }
   .brand {
-    padding: 4px 8px 14px;
+    padding: 4px 8px 12px;
   }
   .nav {
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     overflow-x: auto;
     padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
   }
   .nav button {
     text-align: center;
@@ -727,6 +853,24 @@ tbody tr:last-child td {
   .two {
     grid-template-columns: 1fr;
   }
+  .duo {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    width: 100%;
+  }
+  .filters .search {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .chart {
+    height: 230px;
+  }
+  .col {
+    flex: 1 0 36px;
+    min-width: 30px;
+  }
   .top {
     align-items: flex-start;
     flex-direction: column;
@@ -736,5 +880,48 @@ tbody tr:last-child td {
   }
   .toolbar {
     align-items: stretch;
+    flex-direction: column;
+  }
+  .toolbar .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toolbar .btn,
+  .toolbar .search {
+    width: 100%;
+  }
+  .toolbar .search {
+    min-width: 0;
+  }
+  .field input,
+  .field select,
+  .field textarea,
+  .search {
+    font-size: 16px;
+  }
+  th,
+  td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+  .modal {
+    padding: 18px;
+  }
+  .login-card {
+    padding: 28px 22px;
+  }
+  .login {
+    padding: 16px;
+  }
+  .userbox {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .toast {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    text-align: center;
   }
 }

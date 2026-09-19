@@ -46,6 +46,7 @@ I.ru = {
   Login: "Логин",
   Parol: "Пароль",
   "Parol (6+)": "Пароль (6+)",
+  "Ko'rsatish": "Показать",
   Kirish: "Войти",
   "Birinchi ishga tushirish:": "Первый запуск:",
   "Admin yaratish": "Создать админа",
@@ -154,6 +155,40 @@ I.ru = {
   debt_payment: "Оплата долга",
   payroll: "Зарплата",
   Tema: "Тема",
+  Statistika: "Статистика",
+  Zaxira: "Резервная копия",
+  "Zaxira nusxalari": "Резервные копии",
+  Kunlik: "Дневная",
+  Haftalik: "Недельная",
+  Oylik: "Месячная",
+  Yillik: "Годовая",
+  "Sotuv va foyda grafigi": "График продаж и прибыли",
+  "Top mahsulotlar": "Топ товары",
+  "Top mijozlar": "Топ клиенты",
+  Soni: "Кол-во",
+  Daromad: "Доход",
+  "Yangi zaxira": "Создать копию",
+  "Yuklab olish": "Скачать",
+  Tiklash: "Восстановить",
+  Manba: "Источник",
+  Masofaviy: "Облачный",
+  "Mahalliy fayl": "Локальный файл",
+  Hajm: "Размер",
+  "Qidirish...": "Поиск...",
+  "Mahsulot yoki mijoz": "Товар или клиент",
+  "To'lov turi": "Тип оплаты",
+  "Barcha to'lov turlari": "Все типы оплаты",
+  "Barcha kategoriyalar": "Все категории",
+  "Parol o'zgartirish": "Смена пароля",
+  "Joriy parol": "Текущий пароль",
+  "Yangi parol (6+)": "Новый пароль (6+)",
+  "Parol yangilandi": "Пароль обновлён",
+  "Zaxira yaratildi": "Резервная копия создана",
+  Tiklandi: "Восстановлено",
+  "Tiklashni tasdiqlaysizmi?": "Подтвердить восстановление?",
+  "Zaxira izohi":
+    "Данные автоматически копируются каждый день и хранятся 14 дней. Можно также создать копию вручную.",
+  "Yuklanmoqda...": "Загрузка...",
 };
 I.en = {
   Dashboard: "Dashboard",
@@ -176,6 +211,7 @@ I.en = {
   Login: "Login",
   Parol: "Password",
   "Parol (6+)": "Password (6+)",
+  "Ko'rsatish": "Show",
   Kirish: "Sign in",
   "Birinchi ishga tushirish:": "First launch:",
   "Admin yaratish": "Create admin",
@@ -283,6 +319,40 @@ I.en = {
   debt_payment: "Debt payment",
   payroll: "Salary",
   Tema: "Theme",
+  Statistika: "Statistics",
+  Zaxira: "Backup",
+  "Zaxira nusxalari": "Backups",
+  Kunlik: "Daily",
+  Haftalik: "Weekly",
+  Oylik: "Monthly",
+  Yillik: "Yearly",
+  "Sotuv va foyda grafigi": "Sales & profit chart",
+  "Top mahsulotlar": "Top products",
+  "Top mijozlar": "Top customers",
+  Soni: "Qty",
+  Daromad: "Revenue",
+  "Yangi zaxira": "New backup",
+  "Yuklab olish": "Download",
+  Tiklash: "Restore",
+  Manba: "Source",
+  Masofaviy: "Remote",
+  "Mahalliy fayl": "Local file",
+  Hajm: "Size",
+  "Qidirish...": "Search...",
+  "Mahsulot yoki mijoz": "Product or customer",
+  "To'lov turi": "Payment type",
+  "Barcha to'lov turlari": "All payment types",
+  "Barcha kategoriyalar": "All categories",
+  "Parol o'zgartirish": "Change password",
+  "Joriy parol": "Current password",
+  "Yangi parol (6+)": "New password (6+)",
+  "Parol yangilandi": "Password updated",
+  "Zaxira yaratildi": "Backup created",
+  Tiklandi: "Restored",
+  "Tiklashni tasdiqlaysizmi?": "Confirm restore?",
+  "Zaxira izohi":
+    "Data is backed up automatically every day and kept for 14 days. You can also create a backup manually.",
+  "Yuklanmoqda...": "Loading...",
 };
 const T = (s) => I[lang][s] ?? s;
 const secLabel = (k) => {
@@ -320,6 +390,7 @@ const langSel = () =>
   )}">${theme === "dark" ? "🌙" : "☀️"}</button></div>`;
 const sections = [
   ["dashboard", "🏠", "Dashboard"],
+  ["stats", "📈", "Statistika"],
   ["products", "📦", "Mahsulotlar"],
   ["customers", "👥", "Mijozlar"],
   ["debts", "💳", "Qarzdorlik"],
@@ -333,6 +404,7 @@ const sections = [
   ["reports", "📊", "Hisobot"],
   ["users", "🔐", "Foydalanuvchilar"],
   ["audit", "📝", "Audit log"],
+  ["backup", "💾", "Zaxira"],
 ];
 const fmtN = (v) => {
     if (typeof v === "number") {
@@ -427,7 +499,9 @@ function login() {
       "Biznes boshqaruv tizimi",
     )}</p><form id="login"><div class="field"><label>${T("Login")}</label><input id="u" required autocomplete="username"></div><div class="field"><label>${T(
       "Parol",
-    )}</label><input id="p" type="password" required autocomplete="current-password"></div><button class="btn primary" style="width:100%">${T(
+    )}</label><div class="pwd-wrap"><input id="p" type="password" required autocomplete="current-password"><button type="button" class="pwd-eye" onclick="togglePwd('p')" title="${T(
+      "Ko'rsatish",
+    )}">👁</button></div></div><button class="btn primary" style="width:100%">${T(
       "Kirish",
     )}</button></form><p id="boot" class="muted" style="margin-top:18px;font-size:13px"></p></div></div>`;
   document.querySelector("#login").onsubmit = async (e) => {
@@ -471,7 +545,9 @@ async function bootstrap(e) {
       "Login",
     )}</label><input id="u" required></div><div class="field"><label>${T(
       "Parol (6+)",
-    )}</label><input id="p" type="password" minlength="6" required></div><button class="btn primary" style="width:100%">${T(
+    )}</label><div class="pwd-wrap"><input id="p" type="password" minlength="6" required><button type="button" class="pwd-eye" onclick="togglePwd('p')" title="${T(
+      "Ko'rsatish",
+    )}">👁</button></div></div><button class="btn primary" style="width:100%">${T(
       "Admin yaratish",
     )}</button></form>`;
   bootform.onsubmit = async (e) => {
@@ -508,7 +584,9 @@ function layout(active) {
         LOC,
       )}</span></div><div class="userbox"><span class="badge">${esc(
         me.name,
-      )} · ${me.role}</span></div></div><section id="view"></section></main></div>`;
+      )} · ${me.role}</span><button class="btn key-btn" onclick="changePw()" title="${T(
+        "Parol o'zgartirish",
+      )}">🔑</button></div></div><section id="view"></section></main></div>`;
   page(active);
 }
 function allowed(k) {
@@ -517,6 +595,7 @@ function allowed(k) {
     (
       {
         dashboard: ["ADMIN", "MANAGER", "CASHIER"],
+        stats: ["ADMIN", "MANAGER", "CASHIER"],
         products: ["ADMIN", "MANAGER"],
         customers: ["ADMIN", "MANAGER", "CASHIER"],
         debts: ["ADMIN", "MANAGER", "CASHIER"],
@@ -530,6 +609,7 @@ function allowed(k) {
         reports: ["ADMIN", "MANAGER", "CASHIER"],
         users: ["ADMIN"],
         audit: ["ADMIN"],
+        backup: ["ADMIN"],
       }[k] || []
     ).includes(me.role)
   );
@@ -545,6 +625,7 @@ async function page(k) {
   (
     ({
       dashboard,
+      stats,
       products,
       customers,
       debts,
@@ -558,6 +639,7 @@ async function page(k) {
       reports,
       users,
       audit,
+      backup,
     })[k] || dashboard
   )();
 }
@@ -596,14 +678,127 @@ function dashboard() {
       )}</div>`),
   );
 }
+function barChart(series, labels) {
+  const max = Math.max(1, ...series.flatMap((s) => s.data));
+  const cols = labels
+    .map((l, i) => {
+      const bars = series
+        .map((s) => {
+          const v = s.data[i] || 0;
+          const h = Math.round((v / max) * 100);
+          return `<div class="bar" style="height:${h}%;background:${s.color}" title="${esc(
+            l,
+          )}: ${fmtN(v)}"></div>`;
+        })
+        .join("");
+      return `<div class="col">${bars}<span class="lbl">${esc(l)}</span></div>`;
+    })
+    .join("");
+  return `<div class="chart">${cols}</div><div class="legend">${series
+    .map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`)
+    .join("")}</div>`;
+}
+let curPeriod = "month";
+function stats() {
+  view.innerHTML = `<div class="toolbar"><h2>${T("Statistika")}</h2><div class="filters">${[
+    ["day", T("Kunlik")],
+    ["week", T("Haftalik")],
+    ["month", T("Oylik")],
+    ["year", T("Yillik")],
+  ]
+    .map(
+      ([p, lbl]) =>
+        `<button class="btn seg ${curPeriod === p ? "seg-active" : ""}" onclick="statPeriod('${p}')">${lbl}</button>`,
+    )
+    .join("")}</div></div><div id="statsbody"></div>`;
+  statPeriod(curPeriod);
+}
+async function statPeriod(p) {
+  curPeriod = p;
+  const map = { day: T("Kunlik"), week: T("Haftalik"), month: T("Oylik"), year: T("Yillik") };
+  document.querySelectorAll(".seg").forEach((b) => {
+    b.classList.toggle("seg-active", b.textContent === map[p]);
+  });
+  try {
+    const x = await api("/stats?period=" + p);
+    document.getElementById("statsbody").innerHTML =
+      `<div class="grid"><div class="card"><span>${T(
+        "Sotuv",
+      )}</span><strong>${money(x.totals.revenue)}</strong></div><div class="card"><span>${T(
+        "Tannarx",
+      )}</span><strong>${money(x.totals.cost)}</strong></div><div class="card"><span>${T(
+        "Rasxod",
+      )}</span><strong>${money(x.totals.expense)}</strong></div><div class="card"><span>${T(
+        "Oylik",
+      )}</span><strong>${money(x.totals.payroll)}</strong></div><div class="card"><span>${T(
+        "Foyda",
+      )}</span><strong>${money(x.totals.profit)}</strong></div></div>` +
+      `<div class="panel"><div class="panel-head"><h2>${T(
+        "Sotuv va foyda grafigi",
+      )}</h2></div>${barChart(
+        [
+          { name: T("Sotuv"), color: "var(--primary-2)", data: x.revenue },
+          { name: T("Foyda"), color: "#10b981", data: x.profit },
+        ],
+        x.labels,
+      )}</div>` +
+      `<div class="duo"><div class="panel"><h2>${T(
+        "Top mahsulotlar",
+      )}</h2>${table(
+        [T("Nomi"), T("Soni"), T("Daromad")],
+        x.topProducts
+          .map(
+            (t) =>
+              `<tr><td><b>${esc(t.product)}</b></td><td>${fmtN(t.qty)}</td><td>${money(
+                t.revenue,
+              )}</td></tr>`,
+          )
+          .join(""),
+      )}</div><div class="panel"><h2>${T(
+        "Top mijozlar",
+      )}</h2>${table(
+        [T("Mijoz"), T("Daromad")],
+        x.topCustomers
+          .map(
+            (t) =>
+              `<tr><td>${esc(t.customer)}</td><td>${money(
+                t.revenue,
+              )}</td></tr>`,
+          )
+          .join(""),
+      )}</div></div>`;
+  } catch (e) {
+    toast(e.message);
+  }
+}
 function products() {
-  view.innerHTML = `<div class="toolbar"><input class="search" id="q" placeholder="${T(
+  const cats = [...new Set(db.products.map((p) => p.category).filter(Boolean))];
+  view.innerHTML = `<div class="toolbar"><div class="filters"><input class="search" id="pq" placeholder="${T(
     "Mahsulot qidirish...",
-  )}" oninput="products()"><button class="btn primary" onclick="productForm()">＋ ${T(
+  )}" oninput="renderProducts()"><select id="pc" class="search" onchange="renderProducts()"><option value="">${T(
+    "Barcha kategoriyalar",
+  )}</option>${cats.map((c) => `<option ${pc?.value === c ? "selected" : ""}>${esc(
+    c,
+  )}</option>`).join("")}</select></div><button class="btn primary" onclick="productForm()">＋ ${T(
     "Mahsulot",
-  )}</button></div><div class="panel">${table(
+  )}</button></div><div class="panel"><div id="plist"></div></div>`;
+  renderProducts();
+}
+function renderProducts() {
+  const el = document.getElementById("plist");
+  if (!el) return;
+  const qv = (pq?.value || "").toLowerCase(),
+    cv = pc?.value || "";
+  const arr = db.products.filter(
+    (p) =>
+      (!cv || p.category === cv) &&
+      (!qv ||
+        String(p.name || "").toLowerCase().includes(qv) ||
+        String(p.category || "").toLowerCase().includes(qv)),
+  );
+  el.innerHTML = table(
     [T("Nomi"), T("Kategoriya"), T("Kelish"), T("Sotish"), T("Qoldiq"), T("Holat"), ""],
-    db.products.map(
+    arr.map(
       (p) =>
         `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.category)}</td><td>${money(
           p.buy,
@@ -613,52 +808,97 @@ function products() {
           p,
         )}')">✏️</button><button class="danger" onclick="del('products','${p.id}')">🗑</button></td></tr>`,
     ).join(""),
-  )}</div>`;
+  );
 }
 function customers() {
-  view.innerHTML = `<div class="toolbar"><h2>${T("Mijozlar")}</h2><button class="btn primary" onclick="customerForm()">＋ ${T(
+  view.innerHTML = `<div class="toolbar"><div class="filters"><input class="search" id="cq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderCustomers()"></div><button class="btn primary" onclick="customerForm()">＋ ${T(
     "Mijoz",
-  )}</button></div><div class="panel">${table(
+  )}</button></div><div class="panel"><div id="clist"></div></div>`;
+  renderCustomers();
+}
+function renderCustomers() {
+  const el = document.getElementById("clist");
+  if (!el) return;
+  const qv = (cq?.value || "").toLowerCase();
+  const arr = db.customers.filter(
+    (c) =>
+      !qv ||
+      c.name.toLowerCase().includes(qv) ||
+      String(c.phone || "").toLowerCase().includes(qv) ||
+      String(c.address || "").toLowerCase().includes(qv),
+  );
+  el.innerHTML = table(
     [T("Ism"), T("Telefon"), T("Manzil"), T("Qarz"), ""],
-    db.customers.map(
+    arr.map(
       (c) =>
         `<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${esc(
           c.address,
         )}</td><td class="${c.debt > 0 ? "low" : ""}">${money(c.debt)}</td><td class="actions"><button onclick="customerForm('${q(
           c,
-        )}')">✏️</button><button class="danger" onclick="del('customers','${c.id}')">🗑</button></td></tr>`,
+        )}')">✏️</button><button class="danger" onclick="del('customers','${
+          c.id
+        }')">🗑</button></td></tr>`,
     ).join(""),
-  )}</div>`;
+  );
 }
 function debts() {
-  view.innerHTML = `<div class="toolbar"><h2>${T("Qarzdorlik")}</h2><button class="btn primary" onclick="paymentForm()">＋ ${T(
+  view.innerHTML = `<div class="toolbar"><div class="filters"><input class="search" id="dq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderDebts()"></div><button class="btn primary" onclick="paymentForm()">＋ ${T(
     "Qarzni qabul qilish",
-  )}</button></div><div class="panel">${table(
+  )}</button></div><div class="panel"><div id="dlist"></div></div>`;
+  renderDebts();
+}
+function renderDebts() {
+  const el = document.getElementById("dlist");
+  if (!el) return;
+  const qv = (dq?.value || "").toLowerCase();
+  const arr = db.customers.filter(
+    (c) =>
+      c.debt > 0 &&
+      (!qv ||
+        c.name.toLowerCase().includes(qv) ||
+        String(c.phone || "").toLowerCase().includes(qv)),
+  );
+  el.innerHTML = table(
     [T("Mijoz"), T("Telefon"), T("Qarz"), ""],
-    db.customers
-      .filter((c) => c.debt > 0)
-      .map(
-        (c) =>
-          `<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td class="low">${money(
-            c.debt,
-          )}</td><td><button class="btn" onclick="paymentForm('${q(
-            c,
-          )}')">${T("To'lov")}</button></td></tr>`,
-      )
-      .join(""),
-  )}</div>`;
+    arr.map(
+      (c) =>
+        `<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td class="low">${money(
+          c.debt,
+        )}</td><td><button class="btn" onclick="paymentForm('${q(
+          c,
+        )}')">${T("To'lov")}</button></td></tr>`,
+    ).join(""),
+  );
 }
 function suppliers() {
-  simple(T("Yetkazib beruvchilar"), "suppliers", ["name", "phone", "address", "debt"]);
+  simple(T("Yetkazib beruvchilar"), "suppliers", ["name", "phone", "address", "debt"], "sq");
 }
 function workers() {
-  simple(T("Ishchilar"), "workers", ["name", "role", "salary", "payday", "phone"]);
+  simple(T("Ishchilar"), "workers", ["name", "role", "salary", "payday", "phone"], "wq");
 }
-function simple(titleText, key, fields) {
-  const arr = db[key];
-  view.innerHTML = `<div class="toolbar"><h2>${titleText}</h2><button class="btn primary" onclick="simpleForm('${key}','${q(
+function simple(titleText, key, fields, qid) {
+  const input = qid
+    ? `<input class="search" id="${qid}" placeholder="${T("Qidirish...")}" oninput="renderSimple('${key}','${q(
+        fields,
+      )}','${qid}')">`
+    : "";
+  view.innerHTML = `<div class="toolbar"><h2>${titleText}</h2><div class="filters">${input}<button class="btn primary" onclick="simpleForm('${key}','${q(
     fields,
-  )}')">＋ ${T("Qo'shish")}</button></div><div class="panel">${table(
+  )}')">＋ ${T("Qo'shish")}</button></div></div><div class="panel"><div id="${key}list"></div></div>`;
+  renderSimple(key, fields, qid);
+}
+function renderSimple(key, fields, qid) {
+  const el = document.getElementById(key + "list");
+  if (!el) return;
+  const qv = qid ? (document.getElementById(qid)?.value || "").toLowerCase() : "";
+  const arr = db[key].filter(
+    (x) => !qv || fields.some((f) => String(x[f] || "").toLowerCase().includes(qv)),
+  );
+  el.innerHTML = table(
     fields.map((x) => fl(x)),
     arr
       .map(
@@ -679,48 +919,82 @@ function simple(titleText, key, fields) {
           }')">🗑</button></td></tr>`,
       )
       .join(""),
-  )}</div>`;
+  );
 }
 function sales() {
-  const t = localDate(),
-    xs = db.sales.filter((s) => s.date === t),
-    total = xs.reduce((a, s) => a + s.total, 0);
-  view.innerHTML = `<div class="toolbar"><h2>${T("Sotuv")}</h2><div class="actions"><button class="btn" onclick="page('saleshist')">🗂 ${T(
+  const t = localDate();
+  view.innerHTML = `<div class="toolbar"><div><h2>${T("Sotuv")}</h2><input class="search mt" id="salq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderTodaySales()"></div><div class="actions"><button class="btn" onclick="page('saleshist')">🗂 ${T(
     "Sotuv tarixi",
   )}</button><button class="btn primary" onclick="saleForm()">＋ ${T(
     "Sotuv",
-  )}</button></div></div><div class="grid"><div class="card"><span>${T(
-    "Bugungi sotuvlar",
-  )}</span><strong>${money(total)}</strong></div></div><div class="panel">${table(
-    [T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz"), ""],
-    xs.map((s) => {
-      let p = db.products.find((p) => p.id === s.productId),
-        c = db.customers.find((c) => c.id === s.customerId);
-      return `<tr><td>${esc(p?.name || "-")}</td><td>${fmtN(s.qty)}</td><td>${money(
-        s.total,
-      )}</td><td>${T(s.payment)}</td><td>${esc(
-        c?.name || "-",
-      )}</td><td class="actions"><button class="danger" onclick="del('sales','${
-        s.id
-      }')">🗑</button></td></tr>`;
-    }).join(""),
-  )}</div>`;
+  )}</button></div></div><div class="panel"><div id="slist"></div></div>`;
+  renderTodaySales();
+}
+function renderTodaySales() {
+  const el = document.getElementById("slist");
+  if (!el) return;
+  const t = localDate(),
+    qv = (salq?.value || "").toLowerCase();
+  const xs = db.sales
+    .filter((s) => s.date === t)
+    .filter((s) => {
+      const p = db.products.find((p) => p.id === s.productId);
+      return !qv || (p && p.name.toLowerCase().includes(qv));
+    }),
+    total = xs.reduce((a, s) => a + s.total, 0);
+  el.innerHTML =
+    `<div class="grid"><div class="card"><span>${T("Bugungi sotuvlar")}</span><strong>${money(
+      total,
+    )}</strong></div></div><div class="mt">${table(
+      [T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz"), ""],
+      xs.map((s) => {
+        let p = db.products.find((p) => p.id === s.productId),
+          c = db.customers.find((c) => c.id === s.customerId);
+        return `<tr><td>${esc(p?.name || "-")}</td><td>${fmtN(s.qty)}</td><td>${money(
+          s.total,
+        )}</td><td>${T(s.payment)}</td><td>${esc(
+          c?.name || "-",
+        )}</td><td class="actions"><button class="danger" onclick="del('sales','${
+          s.id
+        }')">🗑</button></td></tr>`;
+      }).join(""),
+    )}</div>`;
 }
 function saleshist() {
   view.innerHTML = `<div class="toolbar"><h2>${T("Sotuv tarixi")}</h2></div><div class="panel"><div class="two"><div class="field"><label>${T(
     "Boshlanish",
-  )}</label><input id="hfrom" type="date"></div><div class="field"><label>${T(
+  )}</label><input id="hfrom" type="date" onchange="histData()"></div><div class="field"><label>${T(
     "Tugash",
-  )}</label><input id="hto" type="date" value="${localDate()}"></div></div><button class="btn primary" onclick="histData()">${T(
-    "Hisobotni ko'rish",
-  )}</button><div id="hist" style="margin-top:18px"></div></div>`;
+  )}</label><input id="hto" type="date" value="${localDate()}" onchange="histData()"></div></div><div class="two"><div class="field"><label>${T(
+    "Qidirish...",
+  )}</label><input id="hs" placeholder="${T("Mahsulot yoki mijoz")}" oninput="histData()"></div><div class="field"><label>${T(
+    "To'lov turi",
+  )}</label><select id="hp" onchange="histData()"><option value="">${T(
+    "Barcha to'lov turlari",
+  )}</option><option>${T("Naqd")}</option><option>${T("Karta")}</option><option>${T(
+    "Qarz",
+  )}</option></select></div></div><div id="hist" style="margin-top:18px"></div></div>`;
   histData();
 }
 function histData() {
   const from = hfrom.value || "1900-01-01",
     to = hto.value || "2999-12-31";
+  const qv = (hs?.value || "").toLowerCase(),
+    pv = hp?.value || "";
   const xs = db.sales
     .filter((s) => s.date >= from && s.date <= to)
+    .filter((s) => {
+      if (pv && s.payment !== pv) return false;
+      if (!qv) return true;
+      const p = db.products.find((p) => p.id === s.productId),
+        c = db.customers.find((c) => c.id === s.customerId);
+      return (
+        (p && p.name.toLowerCase().includes(qv)) ||
+        (c && c.name.toLowerCase().includes(qv))
+      );
+    })
     .sort((a, b) => b.date.localeCompare(a.date));
   const total = xs.reduce((a, s) => a + s.total, 0);
   if (!xs.length)
@@ -743,57 +1017,101 @@ function histData() {
   )}</div>`;
 }
 function purchases() {
-  view.innerHTML = `<div class="toolbar"><h2>${T("Kirim")}</h2><button class="btn primary" onclick="purchaseForm()">＋ ${T(
+  view.innerHTML = `<div class="toolbar"><h2>${T("Kirim")}</h2><div class="filters"><input class="search" id="puq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderPurchases()"></div><button class="btn primary" onclick="purchaseForm()">＋ ${T(
     "Kirim",
-  )}</button></div><div class="panel">${table(
+  )}</button></div><div class="panel"><div id="pulist"></div></div>`;
+  renderPurchases();
+}
+function renderPurchases() {
+  const el = document.getElementById("pulist");
+  if (!el) return;
+  const qv = (puq?.value || "").toLowerCase();
+  const arr = db.purchases.filter((x) => {
+    if (!qv) return true;
+    const p = db.products.find((p) => p.id === x.productId);
+    return p && p.name.toLowerCase().includes(qv);
+  });
+  el.innerHTML = table(
     [T("Sana"), T("Mahsulot"), T("Miqdor"), T("Jami")],
-    db.purchases.map(
+    arr.map(
       (x) =>
         `<tr><td>${x.date}</td><td>${esc(
           db.products.find((p) => p.id === x.productId)?.name || "-",
         )}</td><td>${fmtN(x.qty)}</td><td>${money(x.total)}</td></tr>`,
     ).join(""),
-  )}</div>`;
+  );
 }
 function payroll() {
-  view.innerHTML = `<div class="toolbar"><h2>${T("Oylik to'lovlari")}</h2><button class="btn primary" onclick="payrollForm()">＋ ${T(
+  view.innerHTML = `<div class="toolbar"><h2>${T("Oylik to'lovlari")}</h2><div class="filters"><input class="search" id="plq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderPayroll()"></div><button class="btn primary" onclick="payrollForm()">＋ ${T(
     "To'lov",
-  )}</button></div><div class="panel">${table(
+  )}</button></div><div class="panel"><div id="payrollist"></div></div>`;
+  renderPayroll();
+}
+function renderPayroll() {
+  const el = document.getElementById("payrollist");
+  if (!el) return;
+  const qv = (plq?.value || "").toLowerCase();
+  const arr = db.payroll.filter((x) => {
+    if (!qv) return true;
+    const w = db.workers.find((w) => w.id === x.workerId);
+    return w && w.name.toLowerCase().includes(qv);
+  });
+  el.innerHTML = table(
     [T("Sana"), T("Ishchi"), T("Oy"), T("Summa"), T("Turi")],
-    db.payroll.map(
+    arr.map(
       (x) =>
         `<tr><td>${x.date}</td><td>${esc(
           db.workers.find((w) => w.id === x.workerId)?.name || "-",
         )}</td><td>${x.month}</td><td>${money(x.amount)}</td><td>${T(x.type)}</td></tr>`,
     ).join(""),
-  )}</div>`;
+  );
 }
+let win = [];
 function cash() {
-  api("/cash").then(
-    (x) =>
-      (view.innerHTML = `<div class="grid"><div class="card"><span>${T(
-        "Boshlang'ich",
-      )}</span><strong>${money(x.openingCash)}</strong></div><div class="card"><span>${T(
-        "Tushum",
-      )}</span><strong>${money(x.income)}</strong></div><div class="card"><span>${T(
-        "Chiqim",
-      )}</span><strong>${money(x.expense)}</strong></div><div class="card"><span>${T(
-        "Cash_qoldiq",
-      )}</span><strong>${money(x.balance)}</strong></div></div><div class="panel"><div class="panel-head"><h2>${T(
-        "Kassa",
-      )}</h2><button class="btn" onclick="expenseForm()">＋ ${T(
-        "Rasxod",
-      )}</button></div>${table(
-        [T("Sana"), T("Turi"), T("Summa"), T("Manba"), T("Izoh")],
-        x.items.map(
-          (i) =>
-            `<tr><td>${i.date}</td><td>${
-              i.type === "income" ? T("Tushum") : T("Chiqim")
-            }</td><td>${money(i.amount)}</td><td>${T(i.source)}</td><td>${esc(
-              i.note,
-            )}</td></tr>`,
-        ).join(""),
-      )}</div>`),
+  view.innerHTML = `<div class="grid" id="cashcards"></div><div class="panel"><div class="panel-head"><h2>${T(
+    "Kassa",
+  )}</h2><div class="filters"><input class="search" id="casq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderCash()"></div><button class="btn" onclick="expenseForm()">＋ ${T(
+    "Rasxod",
+  )}</button></div><div id="cashlist"></div></div>`;
+  api("/cash").then((x) => {
+    win = x;
+    renderCash();
+  });
+}
+function renderCash() {
+  const qv = (casq?.value || "").toLowerCase();
+  const items = win.items.filter(
+    (i) =>
+      !qv ||
+      i.note.toLowerCase().includes(qv) ||
+      i.source.toLowerCase().includes(qv) ||
+      String(i.date).includes(qv),
+  );
+  document.getElementById("cashcards").innerHTML = `<div class="card"><span>${T(
+    "Boshlang'ich",
+  )}</span><strong>${money(win.openingCash)}</strong></div><div class="card"><span>${T(
+    "Tushum",
+  )}</span><strong>${money(win.income)}</strong></div><div class="card"><span>${T(
+    "Chiqim",
+  )}</span><strong>${money(win.expense)}</strong></div><div class="card"><span>${T(
+    "Cash_qoldiq",
+  )}</span><strong>${money(win.balance)}</strong></div>`;
+  document.getElementById("cashlist").innerHTML = table(
+    [T("Sana"), T("Turi"), T("Summa"), T("Manba"), T("Izoh")],
+    items.map(
+      (i) =>
+        `<tr><td>${i.date}</td><td>${
+          i.type === "income" ? T("Tushum") : T("Chiqim")
+        }</td><td>${money(i.amount)}</td><td>${T(i.source)}</td><td>${esc(
+          i.note,
+        )}</td></tr>`,
+    ).join(""),
   );
 }
 function reports() {
@@ -891,6 +1209,109 @@ function audit() {
       )}</div>`),
   );
 }
+function backup() {
+  view.innerHTML = `<div class="toolbar"><h2>${T(
+    "Zaxira nusxalari",
+  )}</h2><div class="actions"><button class="btn" onclick="backupDownload()">⬇ ${T(
+    "Yuklab olish",
+  )}</button><button class="btn primary" onclick="backupNow()">＋ ${T(
+    "Yangi zaxira",
+  )}</button></div></div><div class="panel"><p class="muted" style="margin:0 0 14px">${T(
+    "Zaxira izohi",
+  )}</p><div id="backuplist">${T("Yuklanmoqda...")}</div></div>`;
+  backupList();
+}
+async function backupNow() {
+  try {
+    const x = await api("/backup", { method: "POST", body: "{}" });
+    toast(T("Zaxira yaratildi") + (x.remoteKey || x.localFile ? " — " + (x.remoteKey || x.localFile) : ""));
+    page(cur);
+  } catch (e) {
+    toast(e.message);
+  }
+}
+async function backupList() {
+  try {
+    const x = await api("/backups");
+    const remoteRows = x.remote
+      .map(
+        (r) =>
+          `<tr><td>${T("Masofaviy")} (Neon)</td><td>${esc(r.date)}</td><td>${fmtN(
+            r.size,
+          )} B</td><td class="actions"><button class="btn" onclick="backupRestoreRemote('${esc(
+            r.key,
+          )}')">${T("Tiklash")}</button></td></tr>`,
+      )
+      .join("");
+    const localRows = x.local
+      .map(
+        (r) =>
+          `<tr><td>${T("Mahalliy fayl")}</td><td>${esc(r.date)}</td><td>${fmtN(
+            r.size,
+          )} B</td><td class="actions"><button class="btn" onclick="backupRestoreLocal('${esc(
+            r.file,
+          )}')">${T("Tiklash")}</button></td></tr>`,
+      )
+      .join("");
+    document.getElementById("backuplist").innerHTML = table(
+      [T("Manba"), T("Sana"), T("Hajm"), ""],
+      remoteRows + localRows,
+    );
+  } catch (e) {
+    toast(e.message);
+  }
+}
+async function backupRestoreRemote(key) {
+  if (!confirm(T("Tiklashni tasdiqlaysizmi?") + "\n" + key)) return;
+  try {
+    await api("/backup/restore", { method: "POST", body: JSON.stringify({ key }) });
+    toast(T("Tiklandi"));
+    db = await api("/state");
+    page(cur);
+  } catch (e) {
+    toast(e.message);
+  }
+}
+async function backupRestoreLocal(file) {
+  if (!confirm(T("Tiklashni tasdiqlaysizmi?") + "\n" + file)) return;
+  try {
+    await api("/backup/restore", {
+      method: "POST",
+      body: JSON.stringify({ filename: file }),
+    });
+    toast(T("Tiklandi"));
+    db = await api("/state");
+    page(cur);
+  } catch (e) {
+    toast(e.message);
+  }
+}
+function backupDownload() {
+  fetch("/api/backup/download", { headers: { Authorization: "Bearer " + token } })
+    .then((r) => {
+      if (!r.ok) throw Error(T("Yuklab olishda xatolik"));
+      return r.blob();
+    })
+    .then((b) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "marjon-backup-" + localDate() + ".json";
+      a.click();
+    })
+    .catch((e) => toast(e.message));
+}
+function changePw() {
+  modal(
+    T("Parol o'zgartirish"),
+    PW(T("Joriy parol"), "currentPassword") +
+      PW(T("Yangi parol (6+)"), "newPassword", "", 'minlength="6"'),
+    async (fd) => {
+      const d = Object.fromEntries(fd);
+      await api("/me/password", { method: "PATCH", body: JSON.stringify(d) });
+      toast(T("Parol yangilandi"));
+    },
+  );
+}
 function modal(title, body, submit) {
   const b = document.createElement("div");
   b.className = "modal-bg";
@@ -929,6 +1350,22 @@ function F(label, name, type = "text", value = "", extra = "") {
   return `<div class="field"><label>${label}</label><input name="${name}" type="${t}" value="${esc(
     numInput ? fmtN(value) : value,
   )}" ${attrs}></div>`;
+}
+function PW(label, name, value = "", extra = "") {
+  const id = "pw_" + name;
+  const attrs = extra ? " " + extra : "";
+  return `<div class="field"><label>${label}</label><div class="pwd-wrap"><input id="${id}" name="${name}" type="password" value="${esc(
+    value,
+  )}" autocomplete="new-password" ${attrs}><button type="button" class="pwd-eye" onclick="togglePwd('${id}')" title="${T(
+    "Ko'rsatish",
+  )}">👁</button></div></div>`;
+}
+function togglePwd(id) {
+  const i = document.getElementById(id);
+  if (!i) return;
+  const show = i.type === "password";
+  i.type = show ? "text" : "password";
+  i.closest(".pwd-wrap").querySelector(".pwd-eye").textContent = show ? "🙈" : "👁";
 }
 function productForm(x) {
   if (typeof x === "string") x = dq(x);
@@ -1139,7 +1576,7 @@ function userForm() {
     T("Foydalanuvchi yaratish"),
     F(T("Ism"), "name") +
       F(T("Login"), "username") +
-      F(T("Parol"), "password", "password", "", 'minlength="6"') +
+      PW(T("Parol"), "password", "", 'minlength="6"') +
       `<div class="field"><label>${T("Rol")}</label><select name="role"><option>MANAGER</option><option>CASHIER</option><option>ADMIN</option></select></div>`,
     async (fd) =>
       api("/users", {
@@ -1165,7 +1602,7 @@ function userEdit(u) {
       }>${T("Faol")}</option><option value="false" ${
         !u.active ? "selected" : ""
       }>${T("Bloklangan")}</option></select></div>` +
-      F(T("Yangi parol (ixtiyoriy)"), "password", "password"),
+      PW(T("Yangi parol (ixtiyoriy)"), "password"),
     async (fd) => {
       const d = Object.fromEntries(fd);
       d.active = d.active === "true";

@@ -8,6 +8,8 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
+    # Diqqat: Render free plan da disk vaqtinchalik (ephemeral) — data.json restartda yo'qoladi.
+    # Shuning uchun ma'lumotlar albatta Neon/Supabase PostgreSQL da saqlanadi (DATABASE_URL kerak).
     envVars:
       - key: NODE_ENV
         value: production
@@ -15,3 +17,5 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: BACKUP_RETENTION
+        value: "14"

@@ -124,6 +124,50 @@ export function waitFlush() {
   return pendingPush;
 }
 
+const BACKUP_DAYS = Number(process.env.BACKUP_RETENTION || 14);
+
+export async function backupRemote(db) {
+  if (!pool) return null;
+  const stamp = new Date().toLocaleDateString('en-CA');
+  const key = 'backup_' + stamp;
+  const payload = JSON.stringify(db);
+  pendingPush = pendingPush.then(async () => {
+    await pool.query(
+      'INSERT INTO marjon_kv (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      [key, payload]
+    );
+    const { rows } = await pool.query("SELECT key FROM marjon_kv WHERE key LIKE 'backup_%' ORDER BY key");
+    const all = rows.map((r) => r.key).sort();
+    const excess = all.slice(0, Math.max(0, all.length - BACKUP_DAYS));
+    for (const k of excess) await pool.query('DELETE FROM marjon_kv WHERE key = $1', [k]);
+  }).catch((e) => console.error('Remote backup xatosi:', e.message));
+  return key;
+}
+
+export async function listRemoteBackups() {
+  if (!pool) return [];
+  try {
+    const { rows } = await pool.query("SELECT key, value FROM marjon_kv WHERE key LIKE 'backup_%' ORDER BY key DESC");
+    return rows.map((r) => ({ key: r.key, date: r.key.replace('backup_', ''), size: JSON.stringify(r.value).length }));
+  } catch (e) {
+    console.error('Backup ro\u2018yxat xatosi:', e.message);
+    return [];
+  }
+}
+
+export async function fetchRemoteBackup(key) {
+  if (!pool) return null;
+  try {
+    const { rows } = await pool.query('SELECT value FROM marjon_kv WHERE key = $1', [key]);
+    if (!rows.length) return null;
+    const raw = rows[0].value;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    console.error('Backup o\u2018qish xatosi:', e.message);
+    return null;
+  }
+}
+
 export async function initDB() {
   const remote = await connectRemote();
   let parsed = null;
