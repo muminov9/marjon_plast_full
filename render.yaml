@@ -19,3 +19,9 @@ services:
         sync: false
       - key: BACKUP_RETENTION
         value: "14"
+      - key: PLATFORM_ADMIN_USERNAME
+        sync: false
+      - key: PLATFORM_ADMIN_PASSWORD
+        sync: false
+      - key: PLATFORM_BOOTSTRAP_TOKEN
+        sync: false

@@ -3,6 +3,10 @@ let token = localStorage.getItem("mp_token"),
   me = JSON.parse(localStorage.getItem("mp_user") || "null"),
   db = {};
 let lang = localStorage.getItem("mp_lang") || "uz";
+let platformToken = null;
+try {
+  platformToken = sessionStorage.getItem("mp_platform_token") || null;
+} catch {}
 let theme =
   localStorage.getItem("mp_theme") ||
   (globalThis.matchMedia && globalThis.matchMedia("(prefers-color-scheme: dark)").matches
@@ -394,17 +398,20 @@ const sections = [
   ["products", "📦", "Mahsulotlar"],
   ["customers", "👥", "Mijozlar"],
   ["debts", "💳", "Qarzdorlik"],
+  ["dpay", "💸", "Qarzdor to'lovlari"],
   ["suppliers", "🚚", "Yetkazib beruvchilar"],
   ["sales", "🛒", "Sotuv"],
   ["saleshist", "🗂", "Sotuv tarixi"],
   ["purchases", "📥", "Kirim"],
   ["workers", "👷", "Ishchilar"],
   ["payroll", "💰", "Oylik"],
-  ["cash", "💵", "Kassa"],
+  ["rawmat", "🏭", "Xomashyo kelishi"],
+  ["expenses", "🧾", "Rasxod"],
   ["reports", "📊", "Hisobot"],
   ["users", "🔐", "Foydalanuvchilar"],
   ["audit", "📝", "Audit log"],
   ["backup", "💾", "Zaxira"],
+  ["settings", "⚙️", "Biznes sozlamalari"],
 ];
 const fmtN = (v) => {
     if (typeof v === "number") {
@@ -421,7 +428,14 @@ const fmtN = (v) => {
     const n = Number(String(v ?? "").replace(/\./g, "").replace(/\s/g, ""));
     return Number.isFinite(n) ? n : 0;
   },
-  money = (n) => fmtN(n) + " UZS",
+  money = (n) => fmtN(n) + " " + (db?.settings?.currency || "UZS"),
+  unitOf = (p) => (p && p.unit) || "kg",
+  unitSync = (id = "uq") => {
+    const sel = document.querySelector('#mf select[name="productId"]'),
+      u = sel ? sel.options[sel.selectedIndex]?.dataset.unit : "";
+    const s = document.getElementById(id);
+    if (s) s.textContent = u || "kg";
+  },
   esc = (s) =>
     String(s ?? "").replace(
       /[&<>"']/g,
@@ -455,6 +469,22 @@ async function api(path, opt = {}) {
   if (!r.ok) throw Error(x.message || T("Xatolik"));
   return x;
 }
+async function papi(path, opt = {}) {
+  opt.headers = { "Content-Type": "application/json", ...(opt.headers || {}) };
+  if (platformToken) opt.headers.Authorization = "Bearer " + platformToken;
+  const r = await fetch(A + "/api" + path, opt);
+  let x = {};
+  try {
+    x = await r.json();
+  } catch {}
+  if (r.status === 401) {
+    platformToken = null;
+    try { sessionStorage.removeItem("mp_platform_token"); } catch {}
+    throw Error(x.message || T("Platform sessiyasi tugagan"));
+  }
+  if (!r.ok) throw Error(x.message || T("Xatolik"));
+  return x;
+}
 function toast(x) {
   const d = document.createElement("div");
   d.className = "toast";
@@ -484,7 +514,8 @@ function logout() {
 async function init() {
   if (!token) return login();
   try {
-    me = (await api("/me")).user;
+    const m = await api("/me");
+    me = m.user;
     localStorage.setItem("mp_user", JSON.stringify(me));
     db = await api("/state");
     layout("dashboard");
@@ -495,9 +526,11 @@ async function init() {
 function login() {
   document.getElementById("app").innerHTML =
     `<div class="login-lang">${langSel()}</div>` +
-    `<div class="login"><div class="login-card"><h1>Marjon Plast</h1><p class="muted">${T(
+    `<div class="login"><div class="login-card"><h1>Marjon Business</h1><p class="muted">${T(
       "Biznes boshqaruv tizimi",
-    )}</p><form id="login"><div class="field"><label>${T("Login")}</label><input id="u" required autocomplete="username"></div><div class="field"><label>${T(
+    )}</p><form id="login"><div class="field"><label>${T("Biznes kodi")}</label><input id="w" autocomplete="organization" placeholder="${T(
+      "Masalan: marjon-plast",
+    )}"></div><div class="field"><label>${T("Login")}</label><input id="u" required autocomplete="username"></div><div class="field"><label>${T(
       "Parol",
     )}</label><div class="pwd-wrap"><input id="p" type="password" required autocomplete="current-password"><button type="button" class="pwd-eye" onclick="togglePwd('p')" title="${T(
       "Ko'rsatish",
@@ -509,7 +542,7 @@ function login() {
     try {
       const x = await api("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username: u.value, password: p.value }),
+        body: JSON.stringify({ business: w.value.trim(), username: u.value, password: p.value }),
       });
       token = x.token;
       me = x.user;
@@ -522,55 +555,259 @@ function login() {
   };
   api("/auth/status")
     .then((x) => {
-      if (!x.hasUsers)
-        document.querySelector("#boot").innerHTML =
+      const boot = document.querySelector("#boot");
+      if (!boot) return;
+      if (!x.hasBusinesses) {
+        boot.innerHTML =
           T("Birinchi ishga tushirish:") +
           ' <a class="link" href="#" id="createAdmin">' +
-          T("Admin yaratish") +
+          T("Biznes ochish") +
           "</a>";
-      document
-        .querySelector("#createAdmin")
-        ?.addEventListener("click", bootstrap);
+        document.querySelector("#createAdmin")?.addEventListener("click", bootstrap);
+      } else if (x.onboardingEnabled) {
+        boot.innerHTML =
+          '<a class="link" href="#" id="createAdmin">' +
+          T("Yangi biznes ochish") +
+          "</a>";
+        document.querySelector("#createAdmin")?.addEventListener("click", bootstrap);
+      }
+      if (x.platformConfigured || platformToken) {
+        boot.insertAdjacentHTML(
+          "afterend",
+          `<p class="muted" style="margin-top:10px;font-size:13px"><a class="link" href="#" id="platformLink">${T(
+            "Platform administrator",
+          )}</a></p>`,
+        );
+        document.querySelector("#platformLink")?.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          platformLogin();
+        });
+      }
     })
     .catch(() => {});
 }
 async function bootstrap(e) {
   e.preventDefault();
   document.querySelector(".login-card").innerHTML =
-    `<h1>${T("Admin yaratish")}</h1><p class="muted">${T(
-      "Tizimga birinchi kirish uchun asosiy administrator.",
+    `<h1>${T("Biznes ochish")}</h1><p class="muted">${T(
+      "Yangi ish maydoni va biznes administratorini yarating.",
     )}</p><form id="bootform"><div class="field"><label>${T(
+      "Biznes nomi",
+    )}</label><input id="bn" required></div><div class="field"><label>${T(
+      "Biznes kodi",
+    )}</label><input id="bs" placeholder="${T(
+      "avtomatik yaratiladi",
+    )}"></div><div class="field"><label>${T(
       "Ism",
     )}</label><input id="n" required></div><div class="field"><label>${T(
       "Login",
     )}</label><input id="u" required></div><div class="field"><label>${T(
-      "Parol (6+)",
-    )}</label><div class="pwd-wrap"><input id="p" type="password" minlength="6" required><button type="button" class="pwd-eye" onclick="togglePwd('p')" title="${T(
+      "Parol (8+)",
+    )}</label><div class="pwd-wrap"><input id="p" type="password" minlength="8" required><button type="button" class="pwd-eye" onclick="togglePwd('p')" title="${T(
       "Ko'rsatish",
-    )}">👁</button></div></div><button class="btn primary" style="width:100%">${T(
-      "Admin yaratish",
+    )}">👁</button></div></div><div class="two"><div class="field"><label>${T(
+      "Valyuta",
+    )}</label><select id="bc"><option>UZS</option><option>USD</option><option>EUR</option><option>RUB</option><option>KZT</option><option>TRY</option></select></div><div class="field"><label>${T(
+      "Til",
+    )}</label><select id="bl"><option value="uz">O'zbekcha</option><option value="ru">Русский</option><option value="en">English</option></select></div></div><button class="btn primary" style="width:100%">${T(
+      "Biznes ochish",
     )}</button></form>`;
   bootform.onsubmit = async (e) => {
     e.preventDefault();
     try {
-      await api("/auth/bootstrap", {
+      const x = await api("/onboarding/business", {
         method: "POST",
         body: JSON.stringify({
+          businessName: bn.value,
+          slug: bs.value.trim(),
           name: n.value,
           username: u.value,
           password: p.value,
+          currency: bc.value,
+          locale: bl.value,
         }),
       });
-      toast(T("Admin yaratildi"));
-      login();
+      token = x.token;
+      me = x.user;
+      localStorage.setItem("mp_token", token);
+      localStorage.setItem("mp_user", JSON.stringify(me));
+      location.reload();
     } catch (e) {
       toast(e.message);
     }
   };
 }
-function layout(active) {
+async function platformLogin() {
+  if (platformToken) {
+    try {
+      await papi("/platform/me");
+      return platformDashboard();
+    } catch {
+      platformToken = null;
+      try { sessionStorage.removeItem("mp_platform_token"); } catch {}
+    }
+  }
   document.getElementById("app").innerHTML =
-    `<div class="shell"><aside class="side"><div class="brand">Marjon Plast</div><nav class="nav">${sections
+    `<div class="login"><div class="login-card"><h1>${T("Platform administrator")}</h1><p class="muted">${T(
+      "Bizneslarni yaratish, to'xtatish va tariflarni boshqarish.",
+    )}</p><form id="pform"><div class="field"><label>${T(
+      "Login",
+    )}</label><input id="pu" required autocomplete="username"></div><div class="field"><label>${T(
+      "Parol",
+    )}</label><div class="pwd-wrap"><input id="pp" type="password" required autocomplete="current-password"><button type="button" class="pwd-eye" onclick="togglePwd('pp')" title="${T(
+      "Ko'rsatish",
+    )}">👁</button></div></div><button class="btn primary" style="width:100%">${T(
+      "Kirish",
+    )}</button></form><p class="muted" style="margin-top:16px;font-size:13px"><a class="link" href="#" id="pback">${T(
+      "Biznes kirishiga qaytish",
+    )}</a></p></div></div>`;
+  document.querySelector("#pback").onclick = (e) => {
+    e.preventDefault();
+    login();
+  };
+  document.querySelector("#pform").onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const x = await papi("/platform/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username: pu.value, password: pp.value }),
+      });
+      platformToken = x.token;
+      try { sessionStorage.setItem("mp_platform_token", platformToken); } catch {}
+      platformDashboard();
+    } catch (e) {
+      toast(e.message);
+    }
+  };
+}
+
+async function platformDashboard() {
+  const app = document.getElementById("app");
+  let list = [];
+  try {
+    list = await papi("/platform/businesses");
+  } catch (e) {
+    toast(e.message);
+    return platformLogin();
+  }
+  app.innerHTML =
+    `<div class="platform-wrap"><div class="platform-head"><div><h1>${T(
+      "Platform administrator",
+    )}</h1><p class="muted">${T(
+      "Bizneslar, tariflar va holatni boshqarish.",
+    )}</p></div><div class="platform-actions"><button class="btn" id="plogout">${T(
+      "Chiqish",
+    )}</button><button class="btn primary" id="pnew">+ ${T(
+      "Yangi biznes",
+    )}</button></div></div><div id="pbody"></div></div>`;
+  document.querySelector("#plogout").onclick = () => {
+    platformToken = null;
+    try { sessionStorage.removeItem("mp_platform_token"); } catch {}
+    login();
+  };
+  document.querySelector("#pnew").onclick = () => platformCreateForm();
+  const body = document.querySelector("#pbody");
+  const rows = list
+    .map((b) => {
+      const active = b.status === "active";
+      return `<tr><td><strong>${esc(b.name)}</strong><div class="muted">${esc(
+        b.slug,
+      )}</div></td><td>${esc(b.plan)}</td><td><span class="badge ${
+        active ? "green" : "red"
+      }">${esc(b.status)}</span></td><td>${Number(b.users) || 0}</td><td>${Number(
+        b.products,
+      ) || 0}</td><td><button class="btn" data-biz="${esc(b.id)}" data-status="${
+        active ? "suspended" : "active"
+      }">${T(active ? "To'xtatish" : "Faollashtirish")}</button></td></tr>`;
+    })
+    .join("");
+  body.innerHTML =
+    `<div class="panel"><div class="panel-head"><h2>${T(
+      "Bizneslar",
+    )}</h2><span class="muted">${list.length}</span></div>${table(
+      [T("Biznes"), T("Tarif"), T("Holat"), T("Foydalanuvchilar"), T("Mahsulotlar"), ""],
+      rows,
+    )}</div>`;
+  body.querySelectorAll("[data-biz]").forEach((btn) => {
+    btn.onclick = async () => {
+      try {
+        await papi("/platform/businesses/" + encodeURIComponent(btn.dataset.biz), {
+          method: "PATCH",
+          body: JSON.stringify({ status: btn.dataset.status }),
+        });
+        platformDashboard();
+      } catch (e) {
+        toast(e.message);
+      }
+    };
+  });
+}
+
+function platformCreateForm() {
+  const body = document.querySelector("#pbody");
+  body.innerHTML =
+    `<div class="panel"><div class="panel-head"><h2>${T(
+      "Yangi biznes",
+    )}</h2><button class="btn" id="pcancel">${T(
+      "Bekor",
+    )}</button></div><form id="pcreate"><div class="two"><div class="field"><label>${T(
+      "Biznes nomi",
+    )}</label><input id="pbname" required></div><div class="field"><label>${T(
+      "Biznes kodi",
+    )}</label><input id="pbslug" placeholder="${T(
+      "avtomatik yaratiladi",
+    )}"></div></div><div class="two"><div class="field"><label>${T(
+      "Valyuta",
+    )}</label><select id="pbc"><option>UZS</option><option>USD</option><option>EUR</option><option>RUB</option><option>KZT</option><option>TRY</option></select></div><div class="field"><label>${T(
+      "Tarif",
+    )}</label><select id="pbplan"><option value="trial">Trial</option><option value="starter">Starter</option><option value="business">Business</option></select></div></div><p class="muted" style="font-size:13px">${T(
+      "Biznes administratori (ixtiyoriy)",
+    )}</p><div class="two"><div class="field"><label>${T(
+      "Ism",
+    )}</label><input id="pbn"></div><div class="field"><label>${T(
+      "Login",
+    )}</label><input id="pbu"></div></div><div class="field"><label>${T(
+      "Parol (8+)",
+    )}</label><input id="pbp" type="password" minlength="8"></div><button class="btn primary">${T(
+      "Yaratish",
+    )}</button></form></div>`;
+  document.querySelector("#pcancel").onclick = () => platformDashboard();
+  document.querySelector("#pcreate").onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      businessName: pbname.value,
+      slug: pbslug.value.trim(),
+      currency: pbc.value,
+      plan: pbplan.value,
+    };
+    if (pbn.value || pbu.value || pbp.value) {
+      if (!pbn.value || !pbu.value || pbp.value.length < 8) {
+        return toast(T("Administrator uchun ism, login va 8+ belgili parol kiriting"));
+      }
+      payload.name = pbn.value;
+      payload.username = pbu.value;
+      payload.password = pbp.value;
+    }
+    try {
+      await papi("/platform/businesses", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      toast(T("Yaratildi"));
+      platformDashboard();
+    } catch (e) {
+      toast(e.message);
+    }
+  };
+}
+
+function layout(active) {
+  const bizName = db.settings?.companyName || db.business?.name || "Marjon Business";
+  const bizLogo = db.settings?.logo
+    ? `<img class="brand-logo" src="${esc(db.settings.logo)}" alt="">`
+    : "";
+  document.getElementById("app").innerHTML =
+    `<div class="shell"><aside class="side"><div class="brand">${bizLogo}${esc(bizName)}</div><nav class="nav">${sections
       .filter(([k]) => allowed(k))
       .map(
         ([k, emoji, lbl]) =>
@@ -599,17 +836,20 @@ function allowed(k) {
         products: ["ADMIN", "MANAGER"],
         customers: ["ADMIN", "MANAGER", "CASHIER"],
         debts: ["ADMIN", "MANAGER", "CASHIER"],
+        dpay: ["ADMIN", "MANAGER", "CASHIER"],
         suppliers: ["ADMIN", "MANAGER"],
         sales: ["ADMIN", "MANAGER", "CASHIER"],
         saleshist: ["ADMIN", "MANAGER", "CASHIER"],
         purchases: ["ADMIN", "MANAGER"],
         workers: ["ADMIN", "MANAGER"],
         payroll: ["ADMIN", "MANAGER"],
-        cash: ["ADMIN", "MANAGER", "CASHIER"],
+        rawmat: ["ADMIN", "MANAGER", "CASHIER"],
+        expenses: ["ADMIN", "MANAGER", "CASHIER"],
         reports: ["ADMIN", "MANAGER", "CASHIER"],
         users: ["ADMIN"],
         audit: ["ADMIN"],
         backup: ["ADMIN"],
+        settings: ["ADMIN"],
       }[k] || []
     ).includes(me.role)
   );
@@ -635,11 +875,14 @@ async function page(k) {
       purchases,
       workers,
       payroll,
-      cash,
+      rawmat,
+      expenses,
+      dpay,
       reports,
       users,
       audit,
       backup,
+      settings: settingsPage,
     })[k] || dashboard
   )();
 }
@@ -777,7 +1020,7 @@ function products() {
     "Mahsulot qidirish...",
   )}" oninput="renderProducts()"><select id="pc" class="search" onchange="renderProducts()"><option value="">${T(
     "Barcha kategoriyalar",
-  )}</option>${cats.map((c) => `<option ${pc?.value === c ? "selected" : ""}>${esc(
+  )}</option>${cats.map((c) => `<option ${window.pc?.value === c ? "selected" : ""}>${esc(
     c,
   )}</option>`).join("")}</select></div><button class="btn primary" onclick="productForm()">＋ ${T(
     "Mahsulot",
@@ -797,12 +1040,12 @@ function renderProducts() {
         String(p.category || "").toLowerCase().includes(qv)),
   );
   el.innerHTML = table(
-    [T("Nomi"), T("Kategoriya"), T("Kelish"), T("Sotish"), T("Qoldiq"), T("Holat"), ""],
+    [T("Nomi"), T("Kategoriya"), T("Sotish"), T("Qoldiq"), T("Holat"), ""],
     arr.map(
       (p) =>
         `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.category)}</td><td>${money(
-          p.buy,
-        )}</td><td>${money(p.sell)}</td><td>${fmtN(p.stock)}</td><td><span class="badge ${
+          p.sell,
+        )}</td><td>${fmtN(p.stock)} ${unitOf(p)}</td><td><span class="badge ${
           p.stock <= p.min ? "red" : "green"
         }">${p.stock <= p.min ? T("Kam") : T("Yetarli")}</span></td><td class="actions"><button onclick="productForm('${q(
           p,
@@ -878,9 +1121,15 @@ function suppliers() {
   simple(T("Yetkazib beruvchilar"), "suppliers", ["name", "phone", "address", "debt"], "sq");
 }
 function workers() {
-  simple(T("Ishchilar"), "workers", ["name", "role", "salary", "payday", "phone"], "wq");
+  simple(
+    T("Ishchilar"),
+    "workers",
+    ["name", "role", "salary", "payday", "phone"],
+    "wq",
+    `<button class="btn" onclick="advanceForm()">＋ ${T("Avans")}</button>`,
+  );
 }
-function simple(titleText, key, fields, qid) {
+function simple(titleText, key, fields, qid, extra = "") {
   const input = qid
     ? `<input class="search" id="${qid}" placeholder="${T("Qidirish...")}" oninput="renderSimple('${key}','${q(
         fields,
@@ -888,7 +1137,7 @@ function simple(titleText, key, fields, qid) {
     : "";
   view.innerHTML = `<div class="toolbar"><h2>${titleText}</h2><div class="filters">${input}<button class="btn primary" onclick="simpleForm('${key}','${q(
     fields,
-  )}')">＋ ${T("Qo'shish")}</button></div></div><div class="panel"><div id="${key}list"></div></div>`;
+  )}')">＋ ${T("Qo'shish")}</button>${extra}</div></div><div class="panel"><div id="${key}list"></div></div>`;
   renderSimple(key, fields, qid);
 }
 function renderSimple(key, fields, qid) {
@@ -952,7 +1201,9 @@ function renderTodaySales() {
       xs.map((s) => {
         let p = db.products.find((p) => p.id === s.productId),
           c = db.customers.find((c) => c.id === s.customerId);
-        return `<tr><td>${esc(p?.name || "-")}</td><td>${fmtN(s.qty)}</td><td>${money(
+        return `<tr><td>${esc(p?.name || "-")}</td><td>${fmtN(s.qty)} ${unitOf(
+          p,
+        )}</td><td>${money(
           s.total,
         )}</td><td>${T(s.payment)}</td><td>${esc(
           c?.name || "-",
@@ -1004,15 +1255,17 @@ function histData() {
   hist.innerHTML = `<div class="grid"><div class="card"><span>${T(
     "Jami",
   )}</span><strong>${money(total)}</strong></div></div><div style="margin-top:14px">${table(
-    [T("Sana"), T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz")],
+    [T("Sana"), T("Mahsulot"), T("Miqdor"), T("Jami"), T("To'lov"), T("Mijoz"), ""],
     xs.map((s) => {
       let p = db.products.find((p) => p.id === s.productId),
         c = db.customers.find((c) => c.id === s.customerId);
       return `<tr><td>${s.date}</td><td>${esc(p?.name || "-")}</td><td>${fmtN(
         s.qty,
-      )}</td><td>${money(s.total)}</td><td>${T(s.payment)}</td><td>${esc(
+      )} ${unitOf(p)}</td><td>${money(s.total)}</td><td>${T(s.payment)}</td><td>${esc(
         c?.name || "-",
-      )}</td></tr>`;
+      )}</td><td class="actions"><button class="danger" onclick="del('sales','${
+        s.id
+      }')">🗑</button></td></tr>`;
     }).join(""),
   )}</div>`;
 }
@@ -1039,7 +1292,9 @@ function renderPurchases() {
       (x) =>
         `<tr><td>${x.date}</td><td>${esc(
           db.products.find((p) => p.id === x.productId)?.name || "-",
-        )}</td><td>${fmtN(x.qty)}</td><td>${money(x.total)}</td></tr>`,
+        )}</td><td>${fmtN(x.qty)} ${unitOf(
+          db.products.find((p) => p.id === x.productId),
+        )}</td><td>${money(x.total)}</td></tr>`,
     ).join(""),
   );
 }
@@ -1061,57 +1316,71 @@ function renderPayroll() {
     return w && w.name.toLowerCase().includes(qv);
   });
   el.innerHTML = table(
-    [T("Sana"), T("Ishchi"), T("Oy"), T("Summa"), T("Turi")],
+    [T("Sana"), T("Ishchi"), T("Oy"), T("Summa"), T("Turi"), ""],
     arr.map(
       (x) =>
         `<tr><td>${x.date}</td><td>${esc(
           db.workers.find((w) => w.id === x.workerId)?.name || "-",
-        )}</td><td>${x.month}</td><td>${money(x.amount)}</td><td>${T(x.type)}</td></tr>`,
+        )}</td><td>${x.month}</td><td>${money(x.amount)}</td><td>${T(
+          x.type,
+        )}</td><td class="actions"><button onclick="payrollForm('${q(
+          x,
+        )}')">✏️</button><button class="danger" onclick="del('payroll','${
+          x.id
+        }')">🗑</button></td></tr>`,
     ).join(""),
   );
 }
-let win = [];
-function cash() {
-  view.innerHTML = `<div class="grid" id="cashcards"></div><div class="panel"><div class="panel-head"><h2>${T(
-    "Kassa",
-  )}</h2><div class="filters"><input class="search" id="casq" placeholder="${T(
+function rawmat() {
+  view.innerHTML = `<div class="toolbar"><div><h2>${T(
+    "Xomashyo kelishi",
+  )}</h2><input class="search mt" id="rmq" placeholder="${T(
     "Qidirish...",
-  )}" oninput="renderCash()"></div><button class="btn" onclick="expenseForm()">＋ ${T(
-    "Rasxod",
-  )}</button></div><div id="cashlist"></div></div>`;
-  api("/cash").then((x) => {
-    win = x;
-    renderCash();
-  });
+  )}" oninput="renderRawMaterials()"></div><button class="btn primary" onclick="rawMatForm()">＋ ${T(
+    "Xomashyo",
+  )}</button></div><div class="panel"><div id="rmlist"></div></div>`;
+  renderRawMaterials();
 }
-function renderCash() {
-  const qv = (casq?.value || "").toLowerCase();
-  const items = win.items.filter(
-    (i) =>
+function renderRawMaterials() {
+  const el = document.getElementById("rmlist");
+  if (!el) return;
+  const qv = (rmq?.value || "").toLowerCase();
+  const arr = db.rawMaterials.filter(
+    (x) =>
       !qv ||
-      i.note.toLowerCase().includes(qv) ||
-      i.source.toLowerCase().includes(qv) ||
-      String(i.date).includes(qv),
+      String(x.name || "").toLowerCase().includes(qv) ||
+      String(x.date).includes(qv),
   );
-  document.getElementById("cashcards").innerHTML = `<div class="card"><span>${T(
-    "Boshlang'ich",
-  )}</span><strong>${money(win.openingCash)}</strong></div><div class="card"><span>${T(
-    "Tushum",
-  )}</span><strong>${money(win.income)}</strong></div><div class="card"><span>${T(
-    "Chiqim",
-  )}</span><strong>${money(win.expense)}</strong></div><div class="card"><span>${T(
-    "Cash_qoldiq",
-  )}</span><strong>${money(win.balance)}</strong></div>`;
-  document.getElementById("cashlist").innerHTML = table(
-    [T("Sana"), T("Turi"), T("Summa"), T("Manba"), T("Izoh")],
-    items.map(
-      (i) =>
-        `<tr><td>${i.date}</td><td>${
-          i.type === "income" ? T("Tushum") : T("Chiqim")
-        }</td><td>${money(i.amount)}</td><td>${T(i.source)}</td><td>${esc(
-          i.note,
-        )}</td></tr>`,
+  const total = arr.reduce((a, x) => a + x.total, 0);
+  el.innerHTML = `<div class="grid"><div class="card"><span>${T(
+    "Xomashyo qiymati",
+  )}</span><strong>${money(total)}</strong></div></div><div class="mt">${table(
+    [T("Sana"), T("Nomi"), T("Miqdor"), T("Narxi"), T("Jami"), ""],
+    arr.map(
+      (x) =>
+        `<tr><td>${x.date}</td><td>${esc(x.name)}</td><td>${fmtN(x.qty)} ${esc(
+          x.unit || "kg",
+        )}</td><td>${money(x.price)}</td><td>${money(x.total)}</td><td class="actions"><button class="danger" onclick="del('raw-materials','${
+          x.id
+        }')">🗑</button></td></tr>`,
     ).join(""),
+  )}</div>`;
+}
+function rawMatForm() {
+  modal(
+    T("Xomashyo kelishi"),
+    F(T("Nomi"), "name") +
+      F(T("Miqdor"), "qty", "number", 0, 'min="1"') +
+      F(T("Birlik"), "unit", "text", "kg") +
+      F(T("Narxi"), "price", "number", 0, 'min="0"') +
+      F(T("Izoh"), "note") +
+      F("Sana", "date", "date", localDate()),
+    async (fd) => {
+      const d = Object.fromEntries(fd);
+      d.qty = num(d.qty);
+      d.price = num(d.price);
+      await api("/raw-materials", { method: "POST", body: JSON.stringify(d) });
+    },
   );
 }
 function reports() {
@@ -1170,6 +1439,73 @@ function downloadPdf() {
       a.click();
     })
     .catch((e) => toast(e.message));
+}
+function settingsPage() {
+  const s = db.settings || {};
+  const currencies = ["UZS", "USD", "EUR", "RUB", "KZT", "TRY"];
+  view.innerHTML =
+    `<div class="toolbar"><h2>${T("Biznes sozlamalari")}</h2><span class="badge">${esc(
+      db.business?.slug || "",
+    )}</span></div><div class="panel"><form id="bizSettingsForm"><div class="two"><div class="field"><label>${T(
+      "Biznes nomi",
+    )}</label><input name="companyName" value="${esc(
+      s.companyName || "",
+    )}" required></div><div class="field"><label>${T(
+      "Valyuta",
+    )}</label><select name="currency">${currencies
+      .map(
+        (c) =>
+          `<option ${c === (s.currency || "UZS") ? "selected" : ""}>${c}</option>`,
+      )
+      .join("")}</select></div></div><div class="two"><div class="field"><label>${T(
+      "Til",
+    )}</label><select name="locale"><option value="uz" ${
+      s.locale === "uz" ? "selected" : ""
+    }>O'zbekcha</option><option value="ru" ${
+      s.locale === "ru" ? "selected" : ""
+    }>Русский</option><option value="en" ${
+      s.locale === "en" ? "selected" : ""
+    }>English</option></select></div><div class="field"><label>${T(
+      "Boshlang'ich kassa",
+    )}</label><input name="openingCash" inputmode="numeric" value="${fmtN(
+      s.openingCash || 0,
+    )}" oninput="this.value=fmtN(this.value)"></div></div><div class="field"><label>${T(
+      "Logo",
+    )}</label><input name="logo" value="${esc(
+      s.logo || "",
+    )}" placeholder="https://... yoki data:image/png;base64,..."></div><div class="field"><label>${T(
+      "Logo fayli",
+    )}</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div>${
+      s.logo
+        ? `<div class="panel" style="box-shadow:none"><img class="settings-logo" src="${esc(
+            s.logo,
+          )}" alt="logo"></div>`
+        : ""
+    }<button class="btn primary" type="submit">${T("Saqlash")}</button></form></div>`;
+  const file = document.querySelector("#logoFile");
+  file?.addEventListener("change", () => {
+    const f = file.files?.[0];
+    if (!f) return;
+    if (f.size > 512 * 1024) return toast(T("Logo hajmi 512 KB dan oshmasligi kerak"));
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.querySelector('#bizSettingsForm [name="logo"]').value = reader.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  document.querySelector("#bizSettingsForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(e.target));
+    fd.openingCash = num(fd.openingCash);
+    try {
+      await api("/settings", { method: "PUT", body: JSON.stringify(fd) });
+      db = await api("/state");
+      layout("settings");
+      toast(T("Saqlandi"));
+    } catch (err) {
+      toast(err.message);
+    }
+  };
 }
 function users() {
   api("/users").then(
@@ -1304,7 +1640,7 @@ function changePw() {
   modal(
     T("Parol o'zgartirish"),
     PW(T("Joriy parol"), "currentPassword") +
-      PW(T("Yangi parol (6+)"), "newPassword", "", 'minlength="6"'),
+      PW(T("Yangi parol (8+)"), "newPassword", "", 'minlength="8"'),
     async (fd) => {
       const d = Object.fromEntries(fd);
       await api("/me/password", { method: "PATCH", body: JSON.stringify(d) });
@@ -1373,13 +1709,8 @@ function productForm(x) {
     x ? T("Mahsulotni tahrirlash") : T("Mahsulot qo'shish"),
     F(T("Nomi"), "name", "text", x?.name) +
       F(T("Kategoriya"), "category", "text", x?.category) +
-      F(T("Birlik"), "unit", "text", x?.unit || T("dona")) +
-      `<div class="two">${F(T("Kelish narxi"), "buy", "number", x?.buy || 0)}${F(
-        T("Sotish narxi"),
-        "sell",
-        "number",
-        x?.sell || 0,
-      )}</div><div class="two">${F(
+      F(T("Birlik"), "unit", "text", x?.unit || "kg") +
+      `${F(T("Sotish narxi"), "sell", "number", x?.sell || 0)}<div class="two">${F(
         T("Qoldiq"),
         "stock",
         "number",
@@ -1468,18 +1799,94 @@ function paymentForm(c) {
     },
   );
 }
+function dpay() {
+  view.innerHTML = `<div class="toolbar"><div class="filters"><input class="search" id="dpq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderDpay()"></div><button class="btn primary" onclick="dpayForm()">＋ ${T(
+    "To'lov",
+  )}</button></div><div class="panel"><div id="dplist"></div></div>`;
+  renderDpay();
+}
+function renderDpay() {
+  const el = document.getElementById("dplist");
+  if (!el) return;
+  const qv = (dpq?.value || "").toLowerCase();
+  const arr = (db.payments || []).filter((p) => {
+    if (!qv) return true;
+    const c = db.customers.find((x) => x.id === p.customerId);
+    return (
+      (c && c.name.toLowerCase().includes(qv)) || String(p.date).includes(qv)
+    );
+  });
+  if (!arr.length)
+    return (el.innerHTML = table(
+      [T("Sana"), T("Mijoz"), T("Summa"), T("Izoh"), ""],
+      "",
+    ));
+  const total = arr.reduce((a, x) => a + x.amount, 0);
+  el.innerHTML = `<div class="grid"><div class="card"><span>${T(
+    "Jami qabul",
+  )}</span><strong>${money(total)}</strong></div></div><div class="mt">${table(
+    [T("Sana"), T("Mijoz"), T("Summa"), T("Izoh"), ""],
+    arr.map(
+      (p) =>
+        `<tr><td>${p.date}</td><td>${esc(
+          db.customers.find((c) => c.id === p.customerId)?.name || "-",
+        )}</td><td>${money(p.amount)}</td><td>${esc(
+          p.note,
+        )}</td><td class="actions"><button class="danger" onclick="del('customer-payments','${
+          p.id
+        }')">🗑</button></td></tr>`,
+    ).join(""),
+  )}</div>`;
+}
+function dpayForm() {
+  const debtors = db.customers.filter((c) => c.debt > 0);
+  if (!debtors.length) return toast(T("Avval qarzdor mijoz yarating"));
+  modal(
+    T("Qarz to'lovi"),
+    `<div class="field"><label>${T(
+      "Mijoz",
+    )}</label><select name="customerId">${debtors
+      .map(
+        (c) =>
+          `<option value="${c.id}">${esc(c.name)} — ${T("Qarz")} ${money(
+            c.debt,
+          )}</option>`,
+      )
+      .join("")}</select></div>${F(
+      T("Summa"),
+      "amount",
+      "number",
+      0,
+      'min="1"',
+    )}${F(T("Izoh"), "note")}${F("Sana", "date", "date", localDate())}`,
+    async (fd) => {
+      const d = Object.fromEntries(fd);
+      d.amount = num(d.amount);
+      await api("/customer-payments", {
+        method: "POST",
+        body: JSON.stringify(d),
+      });
+    },
+  );
+}
 function saleForm() {
   modal(
     T("Sotuv"),
-    `<div class="field"><label>${T("Mahsulot")}</label><select name="productId">${db.products
+    `<div class="field"><label>${T("Mahsulot")}</label><select name="productId" onchange="unitSync()">${db.products
       .map(
         (p) =>
-          `<option value="${p.id}">${esc(p.name)} — ${money(p.sell)} (${T(
-            "Qoldiq",
-          )} ${fmtN(p.stock)})</option>`,
+          `<option value="${p.id}" data-unit="${esc(unitOf(p))}">${esc(
+            p.name,
+          )} — ${money(p.sell)} (${T("Qoldiq")} ${fmtN(p.stock)} ${unitOf(
+            p,
+          )})</option>`,
       )
       .join("")}</select></div>${F(
-      T("Miqdor"),
+      T("Miqdor") + ` (<span id="uq">${
+        db.products[0] ? esc(unitOf(db.products[0])) : "kg"
+      }</span>)`,
       "qty",
       "number",
       1,
@@ -1505,10 +1912,19 @@ function saleForm() {
 function purchaseForm() {
   modal(
     T("Kirim"),
-    `<div class="field"><label>${T("Mahsulot")}</label><select name="productId">${db.products
-      .map((p) => `<option value="${p.id}">${esc(p.name)}</option>`)
+    `<div class="field"><label>${T("Mahsulot")}</label><select name="productId" onchange="unitSync()">${db.products
+      .map(
+        (p) =>
+          `<option value="${p.id}" data-unit="${esc(unitOf(p))}">${esc(
+            p.name,
+          )} — ${money(p.buy)} (${T("Qoldiq")} ${fmtN(p.stock)} ${unitOf(
+            p,
+          )})</option>`,
+      )
       .join("")}</select></div>${F(
-      T("Miqdor"),
+      T("Miqdor") + ` (<span id="uq">${
+        db.products[0] ? esc(unitOf(db.products[0])) : "kg"
+      }</span>)`,
       "qty",
       "number",
       1,
@@ -1528,23 +1944,70 @@ function purchaseForm() {
     },
   );
 }
-function expenseForm() {
+function expenses() {
+  view.innerHTML = `<div class="toolbar"><div class="filters"><input class="search" id="exq" placeholder="${T(
+    "Qidirish...",
+  )}" oninput="renderExpenses()"></div><button class="btn primary" onclick="expenseForm()">＋ ${T(
+    "Rasxod",
+  )}</button></div><div class="panel"><div id="exlist"></div></div>`;
+  renderExpenses();
+}
+function renderExpenses() {
+  const el = document.getElementById("exlist");
+  if (!el) return;
+  const qv = (exq?.value || "").toLowerCase();
+  const arr = db.expenses.filter(
+    (x) =>
+      !qv ||
+      String(x.category || "").toLowerCase().includes(qv) ||
+      String(x.date).includes(qv) ||
+      String(x.note || "").toLowerCase().includes(qv),
+  );
+  if (!arr.length)
+    return (el.innerHTML = table(
+      [T("Sana"), T("Turi"), T("Summa"), T("Izoh"), ""],
+      "",
+    ));
+  const total = arr.reduce((a, x) => a + x.amount, 0);
+  el.innerHTML = `<div class="grid"><div class="card"><span>${T(
+    "Jami rasxod",
+  )}</span><strong>${money(total)}</strong></div></div><div class="mt">${table(
+    [T("Sana"), T("Turi"), T("Summa"), T("Izoh"), ""],
+    arr.map(
+      (x) =>
+        `<tr><td>${x.date}</td><td>${esc(x.category)}</td><td>${money(
+          x.amount,
+        )}</td><td>${esc(x.note)}</td><td class="actions"><button onclick="expenseForm('${q(
+          x,
+        )}')">✏️</button><button class="danger" onclick="del('expenses','${
+          x.id
+        }')">🗑</button></td></tr>`,
+    ).join(""),
+  )}</div>`;
+}
+function expenseForm(x) {
+  if (typeof x === "string") x = dq(x);
   modal(
-    T("Rasxod"),
-    F(T("Turi"), "category") +
-      F(T("Summa"), "amount", "number", 0, 'min="1"') +
-      F(T("Izoh"), "note") +
-      F("Sana", "date", "date", localDate()),
+    x ? T("Rasxodni tahrirlash") : T("Rasxod"),
+    F(T("Turi"), "category", "text", x?.category) +
+      F(T("Summa"), "amount", "number", x?.amount || 0, 'min="1"') +
+      F(T("Izoh"), "note", "text", x?.note) +
+      F("Sana", "date", "date", x?.date || localDate()),
     async (fd) => {
       const d = Object.fromEntries(fd);
       d.amount = num(d.amount);
-      await api("/expenses", { method: "POST", body: JSON.stringify(d) });
+      if (x)
+        await api("/expenses/" + x.id, {
+          method: "PUT",
+          body: JSON.stringify(d),
+        });
+      else await api("/expenses", { method: "POST", body: JSON.stringify(d) });
     },
   );
 }
-function payrollForm() {
+function advanceForm() {
   modal(
-    T("Oylik to'lovi"),
+    T("Avans"),
     `<div class="field"><label>${T(
       "Ishchi",
     )}</label><select name="workerId">${db.workers
@@ -1558,16 +2021,55 @@ function payrollForm() {
       "number",
       0,
       'min="1"',
-    )}<div class="field"><label>${T("Turi")}</label><select name="type"><option value="salary">${T(
-      "salary",
-    )}</option><option value="advance">${T(
-      "advance",
-    )}</option></select></div>${F("Sana", "date", "date", localDate())}`,
+    )}${F("Sana", "date", "date", localDate())}`,
     async (fd) => {
       const d = Object.fromEntries(fd);
       d.amount = num(d.amount);
       d.month = d.date.slice(0, 7);
+      d.type = "advance";
       await api("/payroll", { method: "POST", body: JSON.stringify(d) });
+    },
+  );
+}
+function payrollForm(x) {
+  if (typeof x === "string") x = dq(x);
+  modal(
+    x ? T("To'lovni tahrirlash") : T("Oylik to'lovi"),
+    `<div class="field"><label>${T(
+      "Ishchi",
+    )}</label><select name="workerId">${db.workers
+      .map(
+        (w) =>
+          `<option value="${w.id}" ${
+            x && x.workerId === w.id ? "selected" : ""
+          }>${esc(w.name)} — ${money(w.salary)}</option>`,
+      )
+      .join("")}</select></div>${F(
+      T("Summa"),
+      "amount",
+      "number",
+      x?.amount || 0,
+      'min="1"',
+    )}<div class="field"><label>${T("Turi")}</label><select name="type"><option value="salary" ${
+      x && x.type === "salary" ? "selected" : ""
+    }>${T("salary")}</option><option value="advance" ${
+      x && x.type === "advance" ? "selected" : ""
+    }>${T("advance")}</option></select></div>${F(
+      "Sana",
+      "date",
+      "date",
+      x?.date || localDate(),
+    )}`,
+    async (fd) => {
+      const d = Object.fromEntries(fd);
+      d.amount = num(d.amount);
+      d.month = d.date.slice(0, 7);
+      if (x)
+        await api("/payroll/" + x.id, {
+          method: "PUT",
+          body: JSON.stringify(d),
+        });
+      else await api("/payroll", { method: "POST", body: JSON.stringify(d) });
     },
   );
 }
@@ -1576,7 +2078,7 @@ function userForm() {
     T("Foydalanuvchi yaratish"),
     F(T("Ism"), "name") +
       F(T("Login"), "username") +
-      PW(T("Parol"), "password", "", 'minlength="6"') +
+      PW(T("Parol"), "password", "", 'minlength="8"') +
       `<div class="field"><label>${T("Rol")}</label><select name="role"><option>MANAGER</option><option>CASHIER</option><option>ADMIN</option></select></div>`,
     async (fd) =>
       api("/users", {

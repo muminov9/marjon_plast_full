@@ -1,0 +1,12 @@
+node_modules
+.git
+.env
+.env.local
+.env.*
+data.json
+data.json.tmp
+.vercel
+backups
+corrupt-*.json
+*.log
+npm-debug.log*

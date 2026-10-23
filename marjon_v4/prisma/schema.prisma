@@ -1,4 +1,6 @@
-
+// Reference schema for a normalized PostgreSQL deployment.
+// The current application persists the same tenant-scoped shape in data.json or
+// the Neon JSONB envelope described in docs/MULTI_TENANCY.md.
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,14 +9,86 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id           String   @id @default(cuid())
+model Tenant {
+  id           String           @id @default(cuid())
+  slug         String           @unique
   name         String
-  username     String   @unique
+  logo         String           @default("")
+  currency     String           @default("UZS")
+  locale       String           @default("uz")
+  status       TenantStatus     @default(ACTIVE)
+  planId       String           @default("trial")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  users        TenantUser[]
+  products     Product[]
+  customers    Customer[]
+  suppliers    Supplier[]
+  incomes      Income[]
+  sales        Sale[]
+  expenses     Expense[]
+  workers      Worker[]
+  settings     Settings?
+  auditLogs    AuditLog[]
+  backups      Backup[]
+  subscription Subscription?
+
+  @@index([status])
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELED
+}
+
+model PlatformUser {
+  id           String       @id @default(cuid())
+  name         String
+  username     String       @unique
   passwordHash String
-  role         Role     @default(ADMIN)
+  role         PlatformRole @default(PLATFORM_ADMIN)
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum PlatformRole {
+  PLATFORM_ADMIN
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  tenantId             String   @unique
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId               String   @default("trial")
+  status               String   @default("trialing")
+  provider             String?
+  externalCustomerId   String?
+  externalSubscriptionId String?
+  trialEndsAt          DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([planId])
+}
+
+model TenantUser {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  username     String
+  passwordHash String
+  role         Role     @default(CASHIER)
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, username])
+  @@index([tenantId, role])
 }
 
 enum Role {
@@ -24,7 +98,9 @@ enum Role {
 }
 
 model Product {
-  id        String   @id
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   category  String   @default("")
   size      String   @default("")
@@ -35,10 +111,42 @@ model Product {
   min       Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([tenantId, name])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String   @default("")
+  address   String   @default("")
+  debt      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, name])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String   @default("")
+  address   String   @default("")
+  debt      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, name])
 }
 
 model Income {
-  id         String   @id
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   date       DateTime
   productId  String
   qty        Int
@@ -46,10 +154,14 @@ model Income {
   supplier   String   @default("")
   note       String   @default("")
   createdAt  DateTime @default(now())
+
+  @@index([tenantId, date])
 }
 
 model Sale {
-  id         String   @id
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   date       DateTime
   productId  String
   qty        Int
@@ -58,41 +170,55 @@ model Sale {
   customer   String   @default("")
   note       String   @default("")
   createdAt  DateTime @default(now())
+
+  @@index([tenantId, date])
 }
 
 model Expense {
-  id         String   @id
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   date       DateTime
   category   String
   amount     Int
   note       String   @default("")
   createdAt  DateTime @default(now())
+
+  @@index([tenantId, date])
 }
 
 model Worker {
-  id        String   @id
+  id        String          @id @default(cuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
-  role      String   @default("")
+  role      String          @default("")
   salary    Int
   payday    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
   advances  WorkerAdvance[]
   payments  SalaryPayment[]
+
+  @@index([tenantId, name])
 }
 
 model WorkerAdvance {
-  id        String   @id
+  id        String   @id @default(cuid())
+  tenantId  String
   workerId  String
   date      DateTime
   month     String
   amount    Int
   note      String   @default("")
   worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, workerId])
 }
 
 model SalaryPayment {
-  id        String   @id
+  id        String   @id @default(cuid())
+  tenantId  String
   workerId  String
   date      DateTime
   month     String
@@ -100,10 +226,42 @@ model SalaryPayment {
   type      String   @default("salary")
   note      String   @default("")
   worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, workerId])
 }
 
 model Settings {
-  id          Int @id @default(1)
-  openingCash Int @default(0)
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  openingCash Int      @default(0)
   updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String   @default("")
+  userName  String   @default("")
+  action    String
+  entity    String
+  entityId  String   @default("")
+  details   String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+}
+
+model Backup {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  date      DateTime
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, key])
+  @@index([tenantId, date])
 }
